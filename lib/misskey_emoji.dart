@@ -10,3 +10,5 @@ export 'src/catalog/search.dart';
 export 'src/api/misskey_emoji_api.dart';
 export 'src/cache/emoji_store.dart';
 export 'src/cache/isar_emoji_store.dart';
+export 'src/util/shortcode.dart';
+export 'src/util/server_db.dart';

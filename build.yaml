@@ -1,0 +1,15 @@
+targets:
+  $default:
+    sources:
+      include:
+        - lib/**
+        - $package$
+    builders:
+      isar_generator:isar_generator:
+        generate_for:
+          - lib/**
+      json_serializable:json_serializable:
+        generate_for:
+          - lib/**
+
+
