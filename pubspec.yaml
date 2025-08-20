@@ -1,7 +1,20 @@
 name: misskey_emoji
 description: "A library to cache Misskey MFM emojis for easier use."
 version: 0.0.1-beta
-homepage:
+homepage: https://librarylibrarian.com/
+repository: https://github.com/LibraryLibrarian/misskey_emoji
+issue_tracker: https://github.com/LibraryLibrarian/misskey_emoji/issues
+
+platforms:
+  android:
+  ios:
+
+topics:
+  - misskey
+  - emoji
+  - cache
+  - resolver
+  - catalog
 
 environment:
   sdk: ">=3.5.0 <4.0.0"
