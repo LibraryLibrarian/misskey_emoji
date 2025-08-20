@@ -5,6 +5,7 @@ import 'emoji_store.dart';
 
 part 'isar_emoji_store.g.dart';
 
+/// キャッシュされた絵文字レコードを表すIsarエンティティ
 @Collection()
 class EmojiRecordEntity {
   Id id = Isar.autoIncrement;
@@ -19,6 +20,7 @@ class EmojiRecordEntity {
   late List<String> denyRoleIds;
 }
 
+/// [EmojiRecord]を[EmojiRecordEntity]に変換する処理
 EmojiRecordEntity toEntity(EmojiRecord r) {
   final e = EmojiRecordEntity()
     ..name = r.name
@@ -32,6 +34,7 @@ EmojiRecordEntity toEntity(EmojiRecord r) {
   return e;
 }
 
+/// [EmojiRecordEntity]を[EmojiRecord]に変換する処理
 EmojiRecord fromEntity(EmojiRecordEntity e) {
   return EmojiRecord(
     name: e.name,
@@ -45,7 +48,9 @@ EmojiRecord fromEntity(EmojiRecordEntity e) {
   );
 }
 
+/// [EmojiStore]のIsar実装
 class IsarEmojiStore implements EmojiStore {
+  /// オープン済みのIsarインスタンス
   final Isar isar;
   IsarEmojiStore(this.isar);
 

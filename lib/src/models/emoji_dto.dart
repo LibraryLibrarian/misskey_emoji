@@ -2,6 +2,7 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'emoji_dto.g.dart';
 
+/// Misskey API が返す絵文字の生データ（DTO）。
 @JsonSerializable()
 class EmojiDto {
   final String name;
