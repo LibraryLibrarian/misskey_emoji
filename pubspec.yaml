@@ -1,20 +1,27 @@
 name: misskey_emoji
-description: "A new Flutter package project."
-version: 0.0.1
+description: "A library to cache Misskey MFM emojis for easier use."
+version: 0.0.1-beta
 homepage:
 
 environment:
-  sdk: ^3.8.1
-  flutter: ">=1.17.0"
+  sdk: ">=3.5.0 <4.0.0"
+  flutter: ">=3.24.0"
 
 dependencies:
   flutter:
     sdk: flutter
+  misskey_api_core: ^0.0.2-beta
+  json_annotation: ^4.8.1
+  isar: ^3.1.0+1
+  isar_flutter_libs: ^3.1.0+1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  build_runner: ^2.4.6
+  json_serializable: ^6.7.1
+  isar_generator: ^3.1.0+1
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
