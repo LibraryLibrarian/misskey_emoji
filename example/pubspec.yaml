@@ -1,0 +1,37 @@
+name: misskey_emoji_example
+description: Example app for misskey_emoji
+publish_to: 'none'
+
+environment:
+  sdk: ">=3.5.0 <4.0.0"
+  flutter: ">=3.24.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  misskey_emoji:
+    path: ..
+  misskey_api_core: ^0.0.2-beta
+  cached_network_image: ^3.3.1
+  path_provider: ^2.1.4
+  isar:
+    hosted:
+      name: isar
+      url: https://pub.isar-community.dev/
+    version: ^3.1.8
+  isar_flutter_libs:
+    hosted:
+      name: isar_flutter_libs
+      url: https://pub.isar-community.dev/
+    version: ^3.1.8
+  shared_preferences: ^2.2.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+
+
