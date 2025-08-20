@@ -20,7 +20,9 @@ class MisskeyEmojiApi {
       options: const RequestOptions(authRequired: false, idempotent: true),
     );
     final list = (res['emojis'] as List).cast<Map<String, dynamic>>();
-    return list.map((j) => toRecord(EmojiDto.fromJson(j))).toList(growable: false);
+    return list
+        .map((j) => toRecord(EmojiDto.fromJson(j)))
+        .toList(growable: false);
   }
 
   /// [EmojiDto]を正規化した[EmojiRecord]に変換する処理
@@ -39,5 +41,3 @@ class MisskeyEmojiApi {
     );
   }
 }
-
-

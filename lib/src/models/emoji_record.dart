@@ -41,5 +41,3 @@ class EmojiRecord {
     return u.endsWith('.gif') || u.endsWith('.apng') || u.endsWith('.webp');
   }
 }
-
-

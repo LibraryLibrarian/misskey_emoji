@@ -55,7 +55,8 @@ class InMemoryEmojiCatalog implements EmojiCatalog {
     final now = DateTime.now();
     if (!force) {
       if (now.difference(_last) < ttl) return;
-      if (_lastError != null && now.difference(_lastError!) < errorCooldown) return;
+      if (_lastError != null && now.difference(_lastError!) < errorCooldown)
+        return;
     }
     _ongoing ??= _doSync();
     try {
@@ -69,9 +70,13 @@ class InMemoryEmojiCatalog implements EmojiCatalog {
     try {
       if (_byKey.isEmpty && meta != null) {
         final m = await meta!.getMeta();
-        final metaEmojis = (m.raw['emojis'] as List?)?.cast<Map<String, dynamic>>() ?? const [];
+        final metaEmojis =
+            (m.raw['emojis'] as List?)?.cast<Map<String, dynamic>>() ??
+                const [];
         if (metaEmojis.isNotEmpty) {
-          final list = metaEmojis.map((j) => api.toRecord(EmojiDto.fromJson(j))).toList();
+          final list = metaEmojis
+              .map((j) => api.toRecord(EmojiDto.fromJson(j)))
+              .toList();
           _byKey = _index(list);
         }
       }
@@ -96,5 +101,3 @@ class InMemoryEmojiCatalog implements EmojiCatalog {
     return map;
   }
 }
-
-

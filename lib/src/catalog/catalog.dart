@@ -11,5 +11,3 @@ abstract class EmojiCatalog {
   /// 正規化済みショートコードからレコードへの不変マップを返す
   Map<String, EmojiRecord> snapshot();
 }
-
-

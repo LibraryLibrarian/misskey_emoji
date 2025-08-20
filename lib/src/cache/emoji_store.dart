@@ -8,5 +8,3 @@ abstract class EmojiStore {
   /// 渡された一覧で既存の絵文字レコードをすべて置き換える
   Future<void> saveAll(List<EmojiRecord> all);
 }
-
-

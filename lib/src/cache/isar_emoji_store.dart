@@ -68,5 +68,3 @@ class IsarEmojiStore implements EmojiStore {
     });
   }
 }
-
-

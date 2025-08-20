@@ -10,8 +10,10 @@
 /// - 誤って含まれている場合は絵文字変化セレクタ U+FE0F を削除する
 String normalizeShortcode(String input) {
   final trimmed = input.trim();
-  final hasColonWrap = trimmed.length >= 2 && trimmed.startsWith(':') && trimmed.endsWith(':');
-  final core = hasColonWrap ? trimmed.substring(1, trimmed.length - 1) : trimmed;
+  final hasColonWrap =
+      trimmed.length >= 2 && trimmed.startsWith(':') && trimmed.endsWith(':');
+  final core =
+      hasColonWrap ? trimmed.substring(1, trimmed.length - 1) : trimmed;
   // 絵文字変化セレクタ (U+FE0F) が存在する場合は削除する
   final withoutVariation = core.replaceAll('\uFE0F', '');
   return withoutVariation.toLowerCase();

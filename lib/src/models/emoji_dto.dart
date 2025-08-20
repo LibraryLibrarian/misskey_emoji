@@ -29,8 +29,7 @@ class EmojiDto {
     this.denyRoleIds,
   });
 
-  factory EmojiDto.fromJson(Map<String, dynamic> json) => _$EmojiDtoFromJson(json);
+  factory EmojiDto.fromJson(Map<String, dynamic> json) =>
+      _$EmojiDtoFromJson(json);
   Map<String, dynamic> toJson() => _$EmojiDtoToJson(this);
 }
-
-
