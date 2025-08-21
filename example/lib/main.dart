@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -369,32 +370,35 @@ class _SettingsTab extends StatelessWidget {
           const SizedBox(height: 16),
           Text('サーバーを追加', style: textTheme.titleMedium),
           const SizedBox(height: 8),
-          Row(children: [
-            Expanded(
-              child: TextField(
-                controller: serverNameController,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  hintText: '表示名（例: misskey.io）',
-                ),
-              ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: FilledButton.icon(
+              icon: const Icon(Icons.add),
+              onPressed: () async {
+                final confirmed = await showModalBottomSheet<bool>(
+                  context: context,
+                  isScrollControlled: true,
+                  builder: (ctx) {
+                    final viewInsets = MediaQuery.of(ctx).viewInsets;
+                    return Padding(
+                      padding: EdgeInsets.only(
+                        bottom: viewInsets.bottom,
+                      ),
+                      child: _AddServerSheet(
+                        nameController: serverNameController,
+                        urlController: serverUrlController,
+                        onSubmit: onAddServer,
+                      ),
+                    );
+                  },
+                );
+                if (confirmed == true) {
+                  // 追加済み
+                }
+              },
+              label: const Text('サーバーを追加'),
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: TextField(
-                controller: serverUrlController,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  hintText: 'https://example.com',
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            FilledButton(
-              onPressed: onAddServer,
-              child: const Text('追加'),
-            ),
-          ]),
+          ),
           const SizedBox(height: 16),
           Wrap(spacing: 8, runSpacing: 8, children: [
             FilledButton.tonal(
@@ -412,10 +416,127 @@ class _SettingsTab extends StatelessWidget {
   }
 }
 
+class _AddServerSheet extends StatefulWidget {
+  final TextEditingController nameController;
+  final TextEditingController urlController;
+  final Future<void> Function() onSubmit;
+
+  const _AddServerSheet({
+    required this.nameController,
+    required this.urlController,
+    required this.onSubmit,
+  });
+
+  @override
+  State<_AddServerSheet> createState() => _AddServerSheetState();
+}
+
+class _AddServerSheetState extends State<_AddServerSheet> {
+  bool _submitting = false;
+
+  bool get _canSubmit {
+    return widget.nameController.text.trim().isNotEmpty &&
+        widget.urlController.text.trim().isNotEmpty &&
+        !_submitting;
+  }
+
+  Future<void> _handleSubmit() async {
+    if (!_canSubmit) return;
+    setState(() => _submitting = true);
+    try {
+      await widget.onSubmit();
+      if (mounted) Navigator.of(context).pop(true);
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    widget.nameController.addListener(() => setState(() {}));
+    widget.urlController.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    widget.nameController.removeListener(() {});
+    widget.urlController.removeListener(() {});
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.add_link),
+                const SizedBox(width: 8),
+                const Text('サーバーを追加',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: widget.nameController,
+              textInputAction: TextInputAction.next,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                labelText: '表示名',
+                hintText: '例: misskey.io',
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: widget.urlController,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _handleSubmit(),
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                labelText: 'URL',
+                hintText: 'https://example.com',
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: _submitting
+                      ? null
+                      : () => Navigator.of(context).pop(false),
+                  child: const Text('キャンセル'),
+                ),
+                const SizedBox(width: 8),
+                FilledButton(
+                  onPressed: _canSubmit ? _handleSubmit : null,
+                  child: _submitting
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('追加'),
+                ),
+              ],
+            )
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class ServerEntry {
   final String name;
   final String url;
-  const ServerEntry({required this.name, required this.url});
+  const ServerEntry({required  this.name, required this.url});
 
   String get key => serverKeyFromBaseUrl(Uri.parse(url));
 
@@ -463,6 +584,7 @@ class _SearchAndGridTab extends StatefulWidget {
 class _SearchAndGridTabState extends State<_SearchAndGridTab> {
   late final TextEditingController _searchController;
   String? _selectedCategory;
+  final Set<String> _revealedSensitive = <String>{};
 
   @override
   void initState() {
@@ -505,9 +627,32 @@ class _SearchAndGridTabState extends State<_SearchAndGridTab> {
           })()
         : const <EmojiRecord>[];
 
-    final categories = canUse
-        ? _collectCategories(catalog.snapshot().values)
-        : const <String>{};
+    // 検索語に応じたカテゴリ件数
+    final filteredByText = canUse
+        ? (() {
+            final text = _searchController.text.trim();
+            if (text.isEmpty) {
+              final list = catalog
+                  .snapshot()
+                  .entries
+                  .where((kv) => kv.key == kv.value.name)
+                  .map((kv) => kv.value)
+                  .toList();
+              list.sort((a, b) => a.name.compareTo(b.name));
+              return list;
+            }
+            return EmojiSearch(catalog).query(text, limit: 1000000);
+          })()
+        : const <EmojiRecord>[];
+
+    final Map<String, int> categoryCounts = <String, int>{};
+    for (final e in filteredByText) {
+      final c = e.category;
+      if (c != null && c.isNotEmpty) {
+        categoryCounts[c] = (categoryCounts[c] ?? 0) + 1;
+      }
+    }
+    final sortedCategories = categoryCounts.keys.toList()..sort();
 
     return Column(
       children: [
@@ -530,15 +675,15 @@ class _SearchAndGridTabState extends State<_SearchAndGridTab> {
             scrollDirection: Axis.horizontal,
             children: [
               ChoiceChip(
-                label: const Text('ALL'),
+                label: Text('ALL (${filteredByText.length})'),
                 selected: _selectedCategory == null,
                 onSelected: (_) => setState(() => _selectedCategory = null),
               ),
               const SizedBox(width: 8),
-              ...categories.map((c) => Padding(
+              ...sortedCategories.map((c) => Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: ChoiceChip(
-                      label: Text(c),
+                      label: Text('$c (${categoryCounts[c]})'),
                       selected: _selectedCategory == c,
                       onSelected: (_) => setState(() => _selectedCategory = c),
                     ),
@@ -549,49 +694,130 @@ class _SearchAndGridTabState extends State<_SearchAndGridTab> {
         const Divider(height: 1),
         Expanded(
           child: canUse
-              ? GridView.builder(
-                  padding: const EdgeInsets.all(8),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 6,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                  ),
-                  itemCount: items.length,
-                  itemBuilder: (context, index) {
-                    final e = items[index];
-                    return InkWell(
-                      onTap: () async {
-                        final img = await resolver.resolve(e.name);
-                        if (!context.mounted) return;
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                _EmojiDetailPage(record: e, image: img),
-                          ),
-                        );
-                      },
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            child: CachedNetworkImage(
-                              imageUrl: e.url,
-                              fit: BoxFit.contain,
-                              memCacheWidth: 64,
-                              memCacheHeight: 64,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            e.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 11),
-                          ),
-                        ],
-                      ),
-                    );
+              ? RefreshIndicator(
+                  onRefresh: () async {
+                    await widget.catalog!.sync(force: true);
+                    if (mounted) setState(() {});
                   },
+                  child: items.isEmpty
+                      ? ListView(
+                          physics:
+                              const AlwaysScrollableScrollPhysics(),
+                          children: const [
+                            SizedBox(height: 200),
+                            Center(child: Text('該当する絵文字がありません')),
+                            SizedBox(height: 200),
+                          ],
+                        )
+                      : GridView.builder(
+                          padding: const EdgeInsets.all(8),
+                          gridDelegate:
+                              const SliverGridDelegateWithMaxCrossAxisExtent(
+                            maxCrossAxisExtent: 96,
+                            crossAxisSpacing: 8,
+                            mainAxisSpacing: 8,
+                          ),
+                          itemCount: items.length,
+                          itemBuilder: (context, index) {
+                            final e = items[index];
+                            final bool sensitiveHidden =
+                                e.isSensitive && !_revealedSensitive.contains(e.name);
+                            return InkWell(
+                              onTap: () async {
+                                final img = await resolver.resolve(e.name);
+                                if (!context.mounted) return;
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => _EmojiDetailPage(
+                                        record: e, image: img),
+                                  ),
+                                );
+                              },
+                              onLongPress: () {
+                                if (!e.isSensitive) return;
+                                setState(() {
+                                  if (_revealedSensitive.contains(e.name)) {
+                                    _revealedSensitive.remove(e.name);
+                                  } else {
+                                    _revealedSensitive.add(e.name);
+                                  }
+                                });
+                              },
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Expanded(
+                                    child: Hero(
+                                      tag: e.name,
+                                      child: Builder(
+                                        builder: (_) {
+                                          Widget img = CachedNetworkImage(
+                                            imageUrl: e.url,
+                                            fit: BoxFit.contain,
+                                            memCacheWidth: 64,
+                                            memCacheHeight: 64,
+                                            placeholder: (_, __) => const Center(
+                                                child: SizedBox(
+                                                    width: 16,
+                                                    height: 16,
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                            strokeWidth: 2))),
+                                            errorWidget: (_, __, ___) =>
+                                                const Icon(
+                                                    Icons
+                                                        .broken_image_outlined,
+                                                    size: 20),
+                                            fadeInDuration:
+                                                const Duration(
+                                                    milliseconds: 150),
+                                            fadeOutDuration:
+                                                const Duration(
+                                                    milliseconds: 100),
+                                          );
+                                          if (sensitiveHidden) {
+                                            img = ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
+                                              child: Stack(
+                                                fit: StackFit.expand,
+                                                children: [
+                                                  ImageFiltered(
+                                                    imageFilter:
+                                                        ImageFilter.blur(
+                                                            sigmaX: 6,
+                                                            sigmaY: 6),
+                                                    child: img,
+                                                  ),
+                                                  const Center(
+                                                    child: Icon(
+                                                      Icons
+                                                          .visibility_off_outlined,
+                                                      size: 18,
+                                                      color: Colors.white70,
+                                                    ),
+                                                  )
+                                                ],
+                                              ),
+                                            );
+                                          }
+                                          return img;
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    e.name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 11),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
                 )
               : const Center(child: Text('設定タブで初期化してください')),
         )
@@ -599,14 +825,6 @@ class _SearchAndGridTabState extends State<_SearchAndGridTab> {
     );
   }
 
-  Set<String> _collectCategories(Iterable<EmojiRecord> records) {
-    final set = <String>{};
-    for (final e in records) {
-      final c = e.category;
-      if (c != null && c.isNotEmpty) set.add(c);
-    }
-    return set;
-  }
 }
 
 class _EmojiDetailPage extends StatelessWidget {
@@ -623,13 +841,26 @@ class _EmojiDetailPage extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         children: [
           Center(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: CachedNetworkImage(
-                imageUrl: record.url,
-                width: 160,
-                height: 160,
-                fit: BoxFit.contain,
+            child: Hero(
+              tag: record.name,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: CachedNetworkImage(
+                  imageUrl: record.url,
+                  width: 160,
+                  height: 160,
+                  fit: BoxFit.contain,
+                  placeholder: (_, __) => const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2)),
+                  errorWidget: (_, __, ___) => const Icon(
+                    Icons.broken_image_outlined,
+                    size: 48,
+                  ),
+                  fadeInDuration: const Duration(milliseconds: 150),
+                  fadeOutDuration: const Duration(milliseconds: 100),
+                ),
               ),
             ),
           ),
