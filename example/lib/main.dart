@@ -479,7 +479,8 @@ class _AddServerSheetState extends State<_AddServerSheet> {
                 const Icon(Icons.add_link),
                 const SizedBox(width: 8),
                 const Text('サーバーを追加',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    style:
+                        TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ],
             ),
             const SizedBox(height: 12),
@@ -536,7 +537,7 @@ class _AddServerSheetState extends State<_AddServerSheet> {
 class ServerEntry {
   final String name;
   final String url;
-  const ServerEntry({required  this.name, required this.url});
+  const ServerEntry({required this.name, required this.url});
 
   String get key => serverKeyFromBaseUrl(Uri.parse(url));
 
@@ -616,14 +617,15 @@ class _SearchAndGridTabState extends State<_SearchAndGridTab> {
                   .entries
                   .where((kv) => kv.key == kv.value.name)
                   .map((kv) => kv.value)
-                  .where((e) => _selectedCategory == null ||
+                  .where((e) =>
+                      _selectedCategory == null ||
                       e.category == _selectedCategory)
                   .toList();
               list.sort((a, b) => a.name.compareTo(b.name));
               return list;
             }
-            return EmojiSearch(catalog).query(text,
-                category: _selectedCategory, limit: 1000000);
+            return EmojiSearch(catalog)
+                .query(text, category: _selectedCategory, limit: 1000000);
           })()
         : const <EmojiRecord>[];
 
@@ -701,8 +703,7 @@ class _SearchAndGridTabState extends State<_SearchAndGridTab> {
                   },
                   child: items.isEmpty
                       ? ListView(
-                          physics:
-                              const AlwaysScrollableScrollPhysics(),
+                          physics: const AlwaysScrollableScrollPhysics(),
                           children: const [
                             SizedBox(height: 200),
                             Center(child: Text('該当する絵文字がありません')),
@@ -720,16 +721,16 @@ class _SearchAndGridTabState extends State<_SearchAndGridTab> {
                           itemCount: items.length,
                           itemBuilder: (context, index) {
                             final e = items[index];
-                            final bool sensitiveHidden =
-                                e.isSensitive && !_revealedSensitive.contains(e.name);
+                            final bool sensitiveHidden = e.isSensitive &&
+                                !_revealedSensitive.contains(e.name);
                             return InkWell(
                               onTap: () async {
                                 final img = await resolver.resolve(e.name);
                                 if (!context.mounted) return;
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
-                                    builder: (_) => _EmojiDetailPage(
-                                        record: e, image: img),
+                                    builder: (_) =>
+                                        _EmojiDetailPage(record: e, image: img),
                                   ),
                                 );
                               },
@@ -765,15 +766,12 @@ class _SearchAndGridTabState extends State<_SearchAndGridTab> {
                                                             strokeWidth: 2))),
                                             errorWidget: (_, __, ___) =>
                                                 const Icon(
-                                                    Icons
-                                                        .broken_image_outlined,
+                                                    Icons.broken_image_outlined,
                                                     size: 20),
-                                            fadeInDuration:
-                                                const Duration(
-                                                    milliseconds: 150),
-                                            fadeOutDuration:
-                                                const Duration(
-                                                    milliseconds: 100),
+                                            fadeInDuration: const Duration(
+                                                milliseconds: 150),
+                                            fadeOutDuration: const Duration(
+                                                milliseconds: 100),
                                           );
                                           if (sensitiveHidden) {
                                             img = ClipRRect(
@@ -824,7 +822,6 @@ class _SearchAndGridTabState extends State<_SearchAndGridTab> {
       ],
     );
   }
-
 }
 
 class _EmojiDetailPage extends StatelessWidget {

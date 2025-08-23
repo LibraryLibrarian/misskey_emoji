@@ -12,8 +12,8 @@ enum EmojiSearchMode {
 }
 
 /// スコアリング関数の型定義
-typedef EmojiScorer = double Function(
-    EmojiRecord record, String normalizedQuery);
+typedef EmojiScorer =
+    double Function(EmojiRecord record, String normalizedQuery);
 
 /// 検索オプション
 class EmojiSearchOptions {
@@ -73,12 +73,14 @@ class EmojiSearch {
   ///
   /// 内部的には[queryAdvanced]を呼び出す
   List<EmojiRecord> query(String text, {String? category, int limit = 50}) {
-    final results = queryAdvanced(text,
-        options: EmojiSearchOptions(
-          category: category,
-          limit: limit,
-          mode: EmojiSearchMode.prefix,
-        ));
+    final results = queryAdvanced(
+      text,
+      options: EmojiSearchOptions(
+        category: category,
+        limit: limit,
+        mode: EmojiSearchMode.prefix,
+      ),
+    );
     return results.map((r) => r.record).toList(growable: false);
   }
 
@@ -88,8 +90,10 @@ class EmojiSearch {
   /// - カテゴリ絞込
   /// - スコアリングで並び替え（デフォルト実装あり）
   /// - 同一レコードは最良の一致のみを採用
-  List<EmojiSearchResult> queryAdvanced(String text,
-      {EmojiSearchOptions options = const EmojiSearchOptions()}) {
+  List<EmojiSearchResult> queryAdvanced(
+    String text, {
+    EmojiSearchOptions options = const EmojiSearchOptions(),
+  }) {
     final q = normalizeShortcode(text);
     if (q.isEmpty) return const <EmojiSearchResult>[];
 
@@ -109,10 +113,11 @@ class EmojiSearch {
       EmojiSearchResult? best;
       if (nameScore != null) {
         best = EmojiSearchResult(
-            record: e,
-            score: nameScore,
-            matched: e.name,
-            matchedIsAlias: false);
+          record: e,
+          score: nameScore,
+          matched: e.name,
+          matchedIsAlias: false,
+        );
       }
 
       // aliasの評価
@@ -121,7 +126,11 @@ class EmojiSearch {
           final s = _scoreIfMatch(a, q, scorer);
           if (s != null) {
             final candidate = EmojiSearchResult(
-                record: e, score: s, matched: a, matchedIsAlias: true);
+              record: e,
+              score: s,
+              matched: a,
+              matchedIsAlias: true,
+            );
             if (best == null || candidate.score > best.score) {
               best = candidate;
             }

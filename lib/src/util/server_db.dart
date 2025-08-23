@@ -15,10 +15,7 @@ String serverKeyFromBaseUrl(Uri baseUrl) {
 /// 指定したMisskeyサーバー用に、絵文字キャッシュ専用のIsarを開く
 ///
 /// - Isarのnameをサーバー単位で変えることで、キャッシュの棲み分けを行う
-Future<Isar> openEmojiIsarForServer(
-  Uri baseUrl, {
-  required String directory,
-}) {
+Future<Isar> openEmojiIsarForServer(Uri baseUrl, {required String directory}) {
   final key = serverKeyFromBaseUrl(baseUrl);
   final dbName = 'misskey_emoji_$key';
   return Isar.open(

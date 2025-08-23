@@ -72,7 +72,7 @@ class InMemoryEmojiCatalog implements EmojiCatalog {
         final m = await meta!.getMeta();
         final metaEmojis =
             (m.raw['emojis'] as List?)?.cast<Map<String, dynamic>>() ??
-                const [];
+            const [];
         if (metaEmojis.isNotEmpty) {
           final list = metaEmojis
               .map((j) => api.toRecord(EmojiDto.fromJson(j)))

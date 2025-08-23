@@ -12,8 +12,11 @@ class EmojiImage {
   /// センシティブフラグ
   final bool isSensitive;
 
-  const EmojiImage(
-      {required this.url, required this.animated, required this.isSensitive});
+  const EmojiImage({
+    required this.url,
+    required this.animated,
+    required this.isSensitive,
+  });
 }
 
 /// ショートコードを表示可能な[EmojiImage]に解決する
@@ -31,7 +34,6 @@ class MisskeyEmojiResolver implements EmojiResolver {
   MisskeyEmojiResolver(this.catalog);
 
   @override
-
   /// ショートコードを[EmojiImage]に解決する
   ///
   /// キャッシュミス時には1度だけ同期してから再試行する
