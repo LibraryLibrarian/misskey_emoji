@@ -40,7 +40,6 @@ class _HomeState extends State<_Home> {
   // 入力用
   late final TextEditingController _serverNameController;
   late final TextEditingController _serverUrlController;
-  int _tabIndex = 0;
 
   // サーバー定義と選択状態
   List<ServerEntry> _servers = [];
@@ -215,57 +214,6 @@ class _HomeState extends State<_Home> {
     return _contexts[key];
   }
 
-  // 旧単一サーバー用の再生成は廃止（サーバー切替は onSelectServer で実施）
-
-  @override
-  Widget build(BuildContext context) {
-    final ctx = _currentContext();
-    final tabs = [
-      _SettingsTab(
-        servers: _servers,
-        selectedKey: _selectedKey,
-        onSelectServer: _selectServer,
-        serverNameController: _serverNameController,
-        serverUrlController: _serverUrlController,
-        onAddServer: _addServer,
-        onRemoveSelected: _removeSelectedServer,
-        onTestConnection: _onTestConnection,
-        onSync: _onSync,
-        onClearCache: _onClearCache,
-        statusText: _status,
-        lastSync: _lastSync,
-      ),
-      _SearchAndGridTab(
-        catalog: ctx?.catalog,
-        resolver: ctx?.resolver,
-      ),
-    ];
-
-    final theme = Theme.of(context);
-    return Scaffold(
-      appBar: AppBar(title: const Text('Misskey Emoji Example')),
-      body: tabs[_tabIndex],
-      bottomNavigationBar: NavigationBar(
-        backgroundColor: theme.colorScheme.surface,
-        surfaceTintColor: theme.colorScheme.surfaceTint,
-        indicatorColor: theme.colorScheme.primaryContainer,
-        selectedIndex: _tabIndex,
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        destinations: const [
-          NavigationDestination(
-              icon: Icon(Icons.settings_outlined),
-              selectedIcon: Icon(Icons.settings),
-              label: '設定'),
-          NavigationDestination(
-              icon: Icon(Icons.emoji_emotions_outlined),
-              selectedIcon: Icon(Icons.emoji_emotions),
-              label: '絵文字'),
-        ],
-        onDestinationSelected: (i) => setState(() => _tabIndex = i),
-      ),
-    );
-  }
-
   Future<void> _onTestConnection() async {
     final http = _currentContext()?.http;
     if (http == null) return;
@@ -302,9 +250,71 @@ class _HomeState extends State<_Home> {
     });
     setState(() => _status = 'キャッシュをクリアしました');
   }
+
+  @override
+  Widget build(BuildContext context) {
+    final ctx = _currentContext();
+    final selectedServer = _servers.firstWhere(
+      (s) => s.key == _selectedKey,
+      orElse: () => _servers.isNotEmpty ? _servers.first : ServerEntry(name: '未選択', url: ''),
+    );
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Row(
+          children: [
+            const Icon(Icons.emoji_emotions, size: 24),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Misskey Emoji'),
+                  Text(
+                    selectedServer.name,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.sync),
+            onPressed: _onSync,
+            tooltip: '同期',
+          ),
+        ],
+      ),
+      drawer: _SettingsDrawer(
+        servers: _servers,
+        selectedKey: _selectedKey,
+        onSelectServer: _selectServer,
+        serverNameController: _serverNameController,
+        serverUrlController: _serverUrlController,
+        onAddServer: _addServer,
+        onRemoveSelected: _removeSelectedServer,
+        onTestConnection: _onTestConnection,
+        onSync: _onSync,
+        onClearCache: _onClearCache,
+        statusText: _status,
+        lastSync: _lastSync,
+      ),
+      body: _EmojiGrid(
+        catalog: ctx?.catalog,
+        resolver: ctx?.resolver,
+        onSync: _onSync,
+      ),
+    );
+  }
 }
 
-class _SettingsTab extends StatelessWidget {
+/// 設定画面をDrawerとして表示するウィジェット
+class _SettingsDrawer extends StatelessWidget {
   final List<ServerEntry> servers;
   final String? selectedKey;
   final Future<void> Function(String key) onSelectServer;
@@ -318,7 +328,7 @@ class _SettingsTab extends StatelessWidget {
   final String statusText;
   final DateTime? lastSync;
 
-  const _SettingsTab({
+  const _SettingsDrawer({
     required this.servers,
     required this.selectedKey,
     required this.onSelectServer,
@@ -335,84 +345,505 @@ class _SettingsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final dropdownValue =
-        servers.any((s) => s.key == selectedKey) ? selectedKey : null;
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: ListView(
+    return Drawer(
+      child: Stack(
         children: [
-          Text('サーバー', style: textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Row(children: [
-            Expanded(
-              child: DropdownButtonFormField<String>(
-                value: dropdownValue,
-                items: servers
-                    .map((s) => DropdownMenuItem(
-                          value: s.key,
-                          child: Text('${s.name}  (${Uri.parse(s.url).host})'),
-                        ))
-                    .toList(),
-                onChanged: (v) => v != null ? onSelectServer(v) : null,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            IconButton(
-              onPressed: onRemoveSelected,
-              icon: const Icon(Icons.delete_outline),
-              tooltip: '選択サーバーを削除',
-            ),
-          ]),
-          const SizedBox(height: 16),
-          Text('サーバーを追加', style: textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: FilledButton.icon(
-              icon: const Icon(Icons.add),
-              onPressed: () async {
-                final confirmed = await showModalBottomSheet<bool>(
-                  context: context,
-                  isScrollControlled: true,
-                  builder: (ctx) {
-                    final viewInsets = MediaQuery.of(ctx).viewInsets;
-                    return Padding(
-                      padding: EdgeInsets.only(
-                        bottom: viewInsets.bottom,
-                      ),
-                      child: _AddServerSheet(
-                        nameController: serverNameController,
-                        urlController: serverUrlController,
-                        onSubmit: onAddServer,
-                      ),
-                    );
-                  },
-                );
-                if (confirmed == true) {
-                  // 追加済み
-                }
-              },
-              label: const Text('サーバーを追加'),
+          // 背景は画面全体に表示
+          Container(
+            color: Theme.of(context).scaffoldBackgroundColor,
+          ),
+          // コンテンツ部分のみSafeAreaでラップ
+          SafeArea(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                _buildServerSection(context),
+                const Divider(),
+                _buildActionsSection(context),
+                const Divider(),
+                _buildStatusSection(context),
+              ],
             ),
           ),
-          const SizedBox(height: 16),
-          Wrap(spacing: 8, runSpacing: 8, children: [
-            FilledButton.tonal(
-                onPressed: onTestConnection, child: const Text('接続テスト')),
-            FilledButton(onPressed: onSync, child: const Text('今すぐ同期')),
-            OutlinedButton(
-                onPressed: onClearCache, child: const Text('キャッシュをクリア')),
-          ]),
-          const SizedBox(height: 16),
-          Text('状態: $statusText'),
-          if (lastSync != null) Text('最終同期: $lastSync'),
         ],
       ),
     );
+  }
+
+  Widget _buildServerSection(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final dropdownValue = servers.any((s) => s.key == selectedKey) ? selectedKey : null;
+    
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.dns, size: 20),
+              const SizedBox(width: 8),
+              Text('サーバー設定', style: textTheme.titleMedium),
+            ],
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            initialValue: dropdownValue,
+            items: servers
+                .map((s) => DropdownMenuItem(
+                      value: s.key,
+                      child: Text('${s.name} (${Uri.parse(s.url).host})'),
+                    ))
+                .toList(),
+            onChanged: (v) => v != null ? onSelectServer(v) : null,
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              labelText: '選択中のサーバー',
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.add),
+                  onPressed: () => _showAddServerDialog(context),
+                  label: const Text('サーバーを追加'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.delete_outline),
+                onPressed: onRemoveSelected,
+                label: const Text('削除'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionsSection(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.tune, size: 20),
+              const SizedBox(width: 8),
+              Text('操作', style: textTheme.titleMedium),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              FilledButton.tonal(
+                onPressed: onTestConnection,
+                child: const Text('接続テスト'),
+              ),
+              FilledButton(
+                onPressed: onSync,
+                child: const Text('今すぐ同期'),
+              ),
+              OutlinedButton(
+                onPressed: onClearCache,
+                child: const Text('キャッシュクリア'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusSection(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.info_outline, size: 20),
+              const SizedBox(width: 8),
+              Text('状態', style: textTheme.titleMedium),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('状態: $statusText', style: textTheme.bodyMedium),
+                if (lastSync != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    '最終同期: ${lastSync.toString().substring(0, 19)}',
+                    style: textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAddServerDialog(BuildContext context) {
+    showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) {
+        final viewInsets = MediaQuery.of(ctx).viewInsets;
+        return Padding(
+          padding: EdgeInsets.only(bottom: viewInsets.bottom),
+          child: _AddServerSheet(
+            nameController: serverNameController,
+            urlController: serverUrlController,
+            onSubmit: onAddServer,
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// 絵文字グリッドを表示するウィジェット
+class _EmojiGrid extends StatefulWidget {
+  final PersistentEmojiCatalog? catalog;
+  final MisskeyEmojiResolver? resolver;
+  final Future<void> Function() onSync;
+
+  const _EmojiGrid({
+    required this.catalog,
+    required this.resolver,
+    required this.onSync,
+  });
+
+  @override
+  State<_EmojiGrid> createState() => _EmojiGridState();
+}
+
+class _EmojiGridState extends State<_EmojiGrid> {
+  late final TextEditingController _searchController;
+  String? _selectedCategory;
+  final Set<String> _revealedSensitive = <String>{};
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final catalog = widget.catalog;
+    final resolver = widget.resolver;
+    final canUse = catalog != null && resolver != null;
+
+    if (!canUse) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.emoji_emotions_outlined,
+              size: 64,
+              color: Theme.of(context).colorScheme.outline,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '設定からサーバーを選択してください',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: Theme.of(context).colorScheme.outline,
+              ),
+            ),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              icon: const Icon(Icons.settings),
+              onPressed: () => Scaffold.of(context).openDrawer(),
+              label: const Text('設定を開く'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final items = _getFilteredItems(catalog);
+    final categoryCounts = _getCategoryCounts(catalog);
+    final sortedCategories = categoryCounts.keys.toList()..sort();
+
+    return Column(
+      children: [
+        _buildSearchBar(),
+        _buildCategoryFilter(sortedCategories, categoryCounts),
+        const Divider(height: 1),
+        Expanded(
+          child: _buildEmojiGrid(items, resolver),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          border: const OutlineInputBorder(),
+          hintText: '絵文字名で検索（前方一致）',
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: _searchController.text.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() {});
+                  },
+                )
+              : null,
+        ),
+        onChanged: (_) => setState(() {}),
+      ),
+    );
+  }
+
+  Widget _buildCategoryFilter(List<String> categories, Map<String, int> counts) {
+    final allCount = counts.values.fold(0, (sum, count) => sum + count);
+    
+    return SizedBox(
+      height: 48,
+      child: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        scrollDirection: Axis.horizontal,
+        children: [
+          ChoiceChip(
+            label: Text('ALL ($allCount)'),
+            selected: _selectedCategory == null,
+            onSelected: (_) => setState(() => _selectedCategory = null),
+          ),
+          const SizedBox(width: 8),
+          ...categories.map((c) => Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ChoiceChip(
+                  label: Text('$c (${counts[c]})'),
+                  selected: _selectedCategory == c,
+                  onSelected: (_) => setState(() => _selectedCategory = c),
+                ),
+              )),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmojiGrid(List<EmojiRecord> items, MisskeyEmojiResolver resolver) {
+    return RefreshIndicator(
+      onRefresh: () async {
+        await widget.onSync();
+        if (mounted) setState(() {});
+      },
+      child: items.isEmpty
+          ? ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [
+                const SizedBox(height: 200),
+                Center(
+                  child: Column(
+                    children: [
+                      Icon(
+                        _searchController.text.trim().isEmpty 
+                            ? Icons.sync_problem
+                            : Icons.search_off,
+                        size: 48,
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        _searchController.text.trim().isEmpty
+                            ? '絵文字を同期してください'
+                            : '該当する絵文字がありません',
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
+                      ),
+                      if (_searchController.text.trim().isEmpty) ...[
+                        const SizedBox(height: 16),
+                        FilledButton.icon(
+                          icon: const Icon(Icons.sync),
+                          onPressed: () async {
+                            await widget.onSync();
+                            if (mounted) setState(() {});
+                          },
+                          label: const Text('今すぐ同期'),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 200),
+              ],
+            )
+          : GridView.builder(
+              padding: const EdgeInsets.all(8),
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 96,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+              ),
+              itemCount: items.length,
+              itemBuilder: (context, index) {
+                final e = items[index];
+                final bool sensitiveHidden = e.isSensitive &&
+                    !_revealedSensitive.contains(e.name);
+                return _buildEmojiItem(e, sensitiveHidden, resolver);
+              },
+            ),
+    );
+  }
+
+  Widget _buildEmojiItem(EmojiRecord e, bool sensitiveHidden, MisskeyEmojiResolver resolver) {
+    return InkWell(
+      onTap: () async {
+        final img = await resolver.resolve(e.name);
+        if (!mounted) return;
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => _EmojiDetailPage(record: e, image: img),
+          ),
+        );
+      },
+      onLongPress: () {
+        if (!e.isSensitive) return;
+        setState(() {
+          if (_revealedSensitive.contains(e.name)) {
+            _revealedSensitive.remove(e.name);
+          } else {
+            _revealedSensitive.add(e.name);
+          }
+        });
+      },
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Hero(
+              tag: e.name,
+              child: Builder(
+                builder: (_) {
+                  Widget img = CachedNetworkImage(
+                    imageUrl: e.url,
+                    fit: BoxFit.contain,
+                    memCacheWidth: 64,
+                    memCacheHeight: 64,
+                    placeholder: (_, __) => const Center(
+                        child: SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2))),
+                    errorWidget: (_, __, ___) =>
+                        const Icon(Icons.broken_image_outlined, size: 20),
+                    fadeInDuration: const Duration(milliseconds: 150),
+                    fadeOutDuration: const Duration(milliseconds: 100),
+                  );
+                  if (sensitiveHidden) {
+                    img = ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          ImageFiltered(
+                            imageFilter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+                            child: img,
+                          ),
+                          const Center(
+                            child: Icon(
+                              Icons.visibility_off_outlined,
+                              size: 18,
+                              color: Colors.white70,
+                            ),
+                          )
+                        ],
+                      ),
+                    );
+                  }
+                  return img;
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            e.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 11),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<EmojiRecord> _getFilteredItems(PersistentEmojiCatalog catalog) {
+    final text = _searchController.text.trim();
+    if (text.isEmpty) {
+      final list = catalog
+          .snapshot()
+          .entries
+          .where((kv) => kv.key == kv.value.name)
+          .map((kv) => kv.value)
+          .where((e) =>
+              _selectedCategory == null || e.category == _selectedCategory)
+          .toList();
+      list.sort((a, b) => a.name.compareTo(b.name));
+      return list;
+    }
+    return EmojiSearch(catalog)
+        .query(text, category: _selectedCategory, limit: 1000000);
+  }
+
+  Map<String, int> _getCategoryCounts(PersistentEmojiCatalog catalog) {
+    final text = _searchController.text.trim();
+    final filteredByText = text.isEmpty
+        ? catalog
+            .snapshot()
+            .entries
+            .where((kv) => kv.key == kv.value.name)
+            .map((kv) => kv.value)
+            .toList()
+        : EmojiSearch(catalog).query(text, limit: 1000000);
+
+    final Map<String, int> categoryCounts = <String, int>{};
+    for (final e in filteredByText) {
+      final c = e.category;
+      if (c != null && c.isNotEmpty) {
+        categoryCounts[c] = (categoryCounts[c] ?? 0) + 1;
+      }
+    }
+    return categoryCounts;
   }
 }
 
@@ -573,257 +1004,6 @@ class ServerContext {
   }
 }
 
-class _SearchAndGridTab extends StatefulWidget {
-  final PersistentEmojiCatalog? catalog;
-  final MisskeyEmojiResolver? resolver;
-  const _SearchAndGridTab({required this.catalog, required this.resolver});
-
-  @override
-  State<_SearchAndGridTab> createState() => _SearchAndGridTabState();
-}
-
-class _SearchAndGridTabState extends State<_SearchAndGridTab> {
-  late final TextEditingController _searchController;
-  String? _selectedCategory;
-  final Set<String> _revealedSensitive = <String>{};
-
-  @override
-  void initState() {
-    super.initState();
-    _searchController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final catalog = widget.catalog;
-    final resolver = widget.resolver;
-    final canUse = catalog != null && resolver != null;
-
-    final items = canUse
-        ? (() {
-            final text = _searchController.text.trim();
-            if (text.isEmpty) {
-              // 空検索時は全件（カテゴリで絞り込み）を表示
-              // snapshotは name と alias をキーに同一レコードを複数回含むため、
-              // 主名キー（key == value.name）のみを採用して重複を除去する。
-              final list = catalog
-                  .snapshot()
-                  .entries
-                  .where((kv) => kv.key == kv.value.name)
-                  .map((kv) => kv.value)
-                  .where((e) =>
-                      _selectedCategory == null ||
-                      e.category == _selectedCategory)
-                  .toList();
-              list.sort((a, b) => a.name.compareTo(b.name));
-              return list;
-            }
-            return EmojiSearch(catalog)
-                .query(text, category: _selectedCategory, limit: 1000000);
-          })()
-        : const <EmojiRecord>[];
-
-    // 検索語に応じたカテゴリ件数
-    final filteredByText = canUse
-        ? (() {
-            final text = _searchController.text.trim();
-            if (text.isEmpty) {
-              final list = catalog
-                  .snapshot()
-                  .entries
-                  .where((kv) => kv.key == kv.value.name)
-                  .map((kv) => kv.value)
-                  .toList();
-              list.sort((a, b) => a.name.compareTo(b.name));
-              return list;
-            }
-            return EmojiSearch(catalog).query(text, limit: 1000000);
-          })()
-        : const <EmojiRecord>[];
-
-    final Map<String, int> categoryCounts = <String, int>{};
-    for (final e in filteredByText) {
-      final c = e.category;
-      if (c != null && c.isNotEmpty) {
-        categoryCounts[c] = (categoryCounts[c] ?? 0) + 1;
-      }
-    }
-    final sortedCategories = categoryCounts.keys.toList()..sort();
-
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(12),
-          child: TextField(
-            controller: _searchController,
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              hintText: '絵文字名で検索（前方一致）',
-              prefixIcon: Icon(Icons.search),
-            ),
-            onChanged: (_) => setState(() {}),
-          ),
-        ),
-        SizedBox(
-          height: 48,
-          child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            scrollDirection: Axis.horizontal,
-            children: [
-              ChoiceChip(
-                label: Text('ALL (${filteredByText.length})'),
-                selected: _selectedCategory == null,
-                onSelected: (_) => setState(() => _selectedCategory = null),
-              ),
-              const SizedBox(width: 8),
-              ...sortedCategories.map((c) => Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      label: Text('$c (${categoryCounts[c]})'),
-                      selected: _selectedCategory == c,
-                      onSelected: (_) => setState(() => _selectedCategory = c),
-                    ),
-                  )),
-            ],
-          ),
-        ),
-        const Divider(height: 1),
-        Expanded(
-          child: canUse
-              ? RefreshIndicator(
-                  onRefresh: () async {
-                    await widget.catalog!.sync(force: true);
-                    if (mounted) setState(() {});
-                  },
-                  child: items.isEmpty
-                      ? ListView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          children: const [
-                            SizedBox(height: 200),
-                            Center(child: Text('該当する絵文字がありません')),
-                            SizedBox(height: 200),
-                          ],
-                        )
-                      : GridView.builder(
-                          padding: const EdgeInsets.all(8),
-                          gridDelegate:
-                              const SliverGridDelegateWithMaxCrossAxisExtent(
-                            maxCrossAxisExtent: 96,
-                            crossAxisSpacing: 8,
-                            mainAxisSpacing: 8,
-                          ),
-                          itemCount: items.length,
-                          itemBuilder: (context, index) {
-                            final e = items[index];
-                            final bool sensitiveHidden = e.isSensitive &&
-                                !_revealedSensitive.contains(e.name);
-                            return InkWell(
-                              onTap: () async {
-                                final img = await resolver.resolve(e.name);
-                                if (!context.mounted) return;
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        _EmojiDetailPage(record: e, image: img),
-                                  ),
-                                );
-                              },
-                              onLongPress: () {
-                                if (!e.isSensitive) return;
-                                setState(() {
-                                  if (_revealedSensitive.contains(e.name)) {
-                                    _revealedSensitive.remove(e.name);
-                                  } else {
-                                    _revealedSensitive.add(e.name);
-                                  }
-                                });
-                              },
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Expanded(
-                                    child: Hero(
-                                      tag: e.name,
-                                      child: Builder(
-                                        builder: (_) {
-                                          Widget img = CachedNetworkImage(
-                                            imageUrl: e.url,
-                                            fit: BoxFit.contain,
-                                            memCacheWidth: 64,
-                                            memCacheHeight: 64,
-                                            placeholder: (_, __) => const Center(
-                                                child: SizedBox(
-                                                    width: 16,
-                                                    height: 16,
-                                                    child:
-                                                        CircularProgressIndicator(
-                                                            strokeWidth: 2))),
-                                            errorWidget: (_, __, ___) =>
-                                                const Icon(
-                                                    Icons.broken_image_outlined,
-                                                    size: 20),
-                                            fadeInDuration: const Duration(
-                                                milliseconds: 150),
-                                            fadeOutDuration: const Duration(
-                                                milliseconds: 100),
-                                          );
-                                          if (sensitiveHidden) {
-                                            img = ClipRRect(
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
-                                              child: Stack(
-                                                fit: StackFit.expand,
-                                                children: [
-                                                  ImageFiltered(
-                                                    imageFilter:
-                                                        ImageFilter.blur(
-                                                            sigmaX: 6,
-                                                            sigmaY: 6),
-                                                    child: img,
-                                                  ),
-                                                  const Center(
-                                                    child: Icon(
-                                                      Icons
-                                                          .visibility_off_outlined,
-                                                      size: 18,
-                                                      color: Colors.white70,
-                                                    ),
-                                                  )
-                                                ],
-                                              ),
-                                            );
-                                          }
-                                          return img;
-                                        },
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    e.name,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(fontSize: 11),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                )
-              : const Center(child: Text('設定タブで初期化してください')),
-        )
-      ],
-    );
-  }
-}
-
 class _EmojiDetailPage extends StatelessWidget {
   final EmojiRecord record;
   final EmojiImage? image;
@@ -863,10 +1043,10 @@ class _EmojiDetailPage extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Wrap(spacing: 8, runSpacing: 8, children: [
-            _Chip(theme, 'category', record.category ?? '-'),
-            _Chip(theme, 'animated', image?.animated == true ? 'yes' : 'no'),
-            _Chip(theme, 'sensitive', record.isSensitive ? 'yes' : 'no'),
-            _Chip(theme, 'localOnly', record.localOnly ? 'yes' : 'no'),
+            _buildChip(theme, 'category', record.category ?? '-'),
+            _buildChip(theme, 'animated', image?.animated == true ? 'yes' : 'no'),
+            _buildChip(theme, 'sensitive', record.isSensitive ? 'yes' : 'no'),
+            _buildChip(theme, 'localOnly', record.localOnly ? 'yes' : 'no'),
           ]),
           const SizedBox(height: 16),
           SelectableText('url: ${record.url}'),
@@ -881,7 +1061,7 @@ class _EmojiDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _Chip(ThemeData theme, String key, String value) {
+  Widget _buildChip(ThemeData theme, String key, String value) {
     return Chip(
       label: Text('$key: $value'),
       side: BorderSide(color: theme.colorScheme.outlineVariant),
