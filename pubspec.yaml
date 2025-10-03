@@ -23,7 +23,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  misskey_api_core: ^0.0.2-beta
+  misskey_api_core: ^0.0.4-beta
   json_annotation: ^4.8.1
   isar:
     hosted:
