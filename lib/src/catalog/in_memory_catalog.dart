@@ -55,8 +55,9 @@ class InMemoryEmojiCatalog implements EmojiCatalog {
     final now = DateTime.now();
     if (!force) {
       if (now.difference(_last) < ttl) return;
-      if (_lastError != null && now.difference(_lastError!) < errorCooldown)
+      if (_lastError != null && now.difference(_lastError!) < errorCooldown) {
         return;
+      }
     }
     _ongoing ??= _doSync();
     try {

@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:misskey_api_core/misskey_api_core.dart';
 
 import '../api/misskey_emoji_api.dart';
+import '../cache/emoji_store.dart';
 import '../models/emoji_dto.dart';
 import '../models/emoji_record.dart';
-import '../cache/emoji_store.dart';
 import '../util/shortcode.dart';
 import 'catalog.dart';
 
@@ -67,8 +67,9 @@ class PersistentEmojiCatalog implements EmojiCatalog {
     final now = DateTime.now();
     if (!force) {
       if (now.difference(_last) < ttl) return;
-      if (_lastError != null && now.difference(_lastError!) < errorCooldown)
+      if (_lastError != null && now.difference(_lastError!) < errorCooldown) {
         return;
+      }
     }
     _ongoing ??= _doSync();
     try {
