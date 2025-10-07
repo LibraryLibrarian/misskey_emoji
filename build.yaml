@@ -5,7 +5,7 @@ targets:
         - lib/**
         - $package$
     builders:
-      isar_generator:isar_generator:
+      isar_community_generator:isar_community_generator:
         generate_for:
           - lib/**
       json_serializable:json_serializable:

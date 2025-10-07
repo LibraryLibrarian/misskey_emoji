@@ -50,6 +50,7 @@ const EmojiRecordEntitySchema = CollectionSchema(
     r'name': PropertySchema(id: 6, name: r'name', type: IsarType.string),
     r'url': PropertySchema(id: 7, name: r'url', type: IsarType.string),
   },
+
   estimateSize: _emojiRecordEntityEstimateSize,
   serialize: _emojiRecordEntitySerialize,
   deserialize: _emojiRecordEntityDeserialize,
@@ -58,10 +59,11 @@ const EmojiRecordEntitySchema = CollectionSchema(
   indexes: {},
   links: {},
   embeddedSchemas: {},
+
   getId: _emojiRecordEntityGetId,
   getLinks: _emojiRecordEntityGetLinks,
   attach: _emojiRecordEntityAttach,
-  version: '3.1.8',
+  version: '3.3.0-dev.3',
 );
 
 int _emojiRecordEntityEstimateSize(
