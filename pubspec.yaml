@@ -25,16 +25,8 @@ dependencies:
     sdk: flutter
   misskey_api_core: ^0.0.4-beta
   json_annotation: ^4.8.1
-  isar:
-    hosted:
-      name: isar
-      url: https://pub.isar-community.dev/
-    version: ^3.1.8
-  isar_flutter_libs:
-    hosted:
-      name: isar_flutter_libs
-      url: https://pub.isar-community.dev/
-    version: ^3.1.8
+  isar_community: ^3.3.0-dev.3
+  isar_community_flutter_libs: ^3.3.0-dev.3
 
 dev_dependencies:
   flutter_test:
@@ -42,11 +34,7 @@ dev_dependencies:
   flutter_lints: ^5.0.0
   build_runner: ^2.4.6
   json_serializable: ^6.7.1
-  isar_generator:
-    hosted:
-      name: isar_generator
-      url: https://pub.isar-community.dev/
-    version: ^3.1.8
+  isar_community_generator: ^3.3.0-dev.3
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
