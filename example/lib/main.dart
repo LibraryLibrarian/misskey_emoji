@@ -4,7 +4,7 @@ import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:misskey_api_core/misskey_api_core.dart';
 import 'package:misskey_emoji/misskey_emoji.dart';
 import 'package:path_provider/path_provider.dart';
@@ -256,7 +256,9 @@ class _HomeState extends State<_Home> {
     final ctx = _currentContext();
     final selectedServer = _servers.firstWhere(
       (s) => s.key == _selectedKey,
-      orElse: () => _servers.isNotEmpty ? _servers.first : ServerEntry(name: '未選択', url: ''),
+      orElse: () => _servers.isNotEmpty
+          ? _servers.first
+          : ServerEntry(name: '未選択', url: ''),
     );
 
     return Scaffold(
@@ -274,8 +276,8 @@ class _HomeState extends State<_Home> {
                   Text(
                     selectedServer.name,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                   ),
                 ],
               ),
@@ -372,8 +374,9 @@ class _SettingsDrawer extends StatelessWidget {
 
   Widget _buildServerSection(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final dropdownValue = servers.any((s) => s.key == selectedKey) ? selectedKey : null;
-    
+    final dropdownValue =
+        servers.any((s) => s.key == selectedKey) ? selectedKey : null;
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -426,7 +429,7 @@ class _SettingsDrawer extends StatelessWidget {
 
   Widget _buildActionsSection(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -465,7 +468,7 @@ class _SettingsDrawer extends StatelessWidget {
 
   Widget _buildStatusSection(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -578,8 +581,8 @@ class _EmojiGridState extends State<_EmojiGrid> {
             Text(
               '設定からサーバーを選択してください',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: Theme.of(context).colorScheme.outline,
-              ),
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
             ),
             const SizedBox(height: 16),
             FilledButton.icon(
@@ -632,9 +635,10 @@ class _EmojiGridState extends State<_EmojiGrid> {
     );
   }
 
-  Widget _buildCategoryFilter(List<String> categories, Map<String, int> counts) {
+  Widget _buildCategoryFilter(
+      List<String> categories, Map<String, int> counts) {
     final allCount = counts.values.fold(0, (sum, count) => sum + count);
-    
+
     return SizedBox(
       height: 48,
       child: ListView(
@@ -660,7 +664,8 @@ class _EmojiGridState extends State<_EmojiGrid> {
     );
   }
 
-  Widget _buildEmojiGrid(List<EmojiRecord> items, MisskeyEmojiResolver resolver) {
+  Widget _buildEmojiGrid(
+      List<EmojiRecord> items, MisskeyEmojiResolver resolver) {
     return RefreshIndicator(
       onRefresh: () async {
         await widget.onSync();
@@ -675,7 +680,7 @@ class _EmojiGridState extends State<_EmojiGrid> {
                   child: Column(
                     children: [
                       Icon(
-                        _searchController.text.trim().isEmpty 
+                        _searchController.text.trim().isEmpty
                             ? Icons.sync_problem
                             : Icons.search_off,
                         size: 48,
@@ -687,8 +692,8 @@ class _EmojiGridState extends State<_EmojiGrid> {
                             ? '絵文字を同期してください'
                             : '該当する絵文字がありません',
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Theme.of(context).colorScheme.outline,
-                        ),
+                              color: Theme.of(context).colorScheme.outline,
+                            ),
                       ),
                       if (_searchController.text.trim().isEmpty) ...[
                         const SizedBox(height: 16),
@@ -717,15 +722,16 @@ class _EmojiGridState extends State<_EmojiGrid> {
               itemCount: items.length,
               itemBuilder: (context, index) {
                 final e = items[index];
-                final bool sensitiveHidden = e.isSensitive &&
-                    !_revealedSensitive.contains(e.name);
+                final bool sensitiveHidden =
+                    e.isSensitive && !_revealedSensitive.contains(e.name);
                 return _buildEmojiItem(e, sensitiveHidden, resolver);
               },
             ),
     );
   }
 
-  Widget _buildEmojiItem(EmojiRecord e, bool sensitiveHidden, MisskeyEmojiResolver resolver) {
+  Widget _buildEmojiItem(
+      EmojiRecord e, bool sensitiveHidden, MisskeyEmojiResolver resolver) {
     return InkWell(
       onTap: () async {
         final img = await resolver.resolve(e.name);
@@ -1044,7 +1050,8 @@ class _EmojiDetailPage extends StatelessWidget {
           const SizedBox(height: 16),
           Wrap(spacing: 8, runSpacing: 8, children: [
             _buildChip(theme, 'category', record.category ?? '-'),
-            _buildChip(theme, 'animated', image?.animated == true ? 'yes' : 'no'),
+            _buildChip(
+                theme, 'animated', image?.animated == true ? 'yes' : 'no'),
             _buildChip(theme, 'sensitive', record.isSensitive ? 'yes' : 'no'),
             _buildChip(theme, 'localOnly', record.localOnly ? 'yes' : 'no'),
           ]),
