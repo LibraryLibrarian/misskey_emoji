@@ -3,7 +3,9 @@ version: 1.0.0
 environment:
   sdk: ">=3.9.0 <4.0.0"
   flutter: ">=3.35.0"
-description: A library to cache Misskey MFM emojis for easier use.
+description: >
+  A Flutter library for caching and resolving Misskey custom emoji metadata
+  with persistent Isar storage, search, and efficient retrieval mechanisms.
 dependencies:
   flutter:
     sdk: flutter
