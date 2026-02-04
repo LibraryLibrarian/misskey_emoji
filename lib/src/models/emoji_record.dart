@@ -37,7 +37,11 @@ class EmojiRecord {
 
   /// アニメーション画像かどうかの簡易推定
   bool get animated {
-    final u = url.toLowerCase();
-    return u.endsWith('.gif') || u.endsWith('.apng') || u.endsWith('.webp');
+    final uri = Uri.tryParse(url);
+    if (uri == null) return false;
+    final path = uri.path.toLowerCase();
+    return path.endsWith('.gif') ||
+        path.endsWith('.apng') ||
+        path.endsWith('.webp');
   }
 }

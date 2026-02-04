@@ -160,7 +160,7 @@ void main() {
           denyRoleIds: [],
         );
 
-        expect(record.animated, isFalse); // 拡張子が末尾にないため
+        expect(record.animated, isTrue); // パス部分で正しく判定
       });
     });
 
