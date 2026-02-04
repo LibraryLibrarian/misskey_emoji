@@ -232,6 +232,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.1.1"
+  logger:
+    dependency: transitive
+    description:
+      name: logger
+      sha256: a7967e31b703831a893bbc3c3dd11db08126fe5f369b5c648a36f821979f5be3
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.6.2"
   matcher:
     dependency: transitive
     description:
@@ -268,10 +276,10 @@ packages:
     dependency: "direct main"
     description:
       name: misskey_api_core
-      sha256: a4ab4dcadebd2c11061c79e4839f2f25740cf966e8e2a3763102baf55f45ee96
+      sha256: "32e17877e5e8044027b6815b510001d4329854d559269b405464e796a16b1ae5"
       url: "https://pub.dev"
     source: hosted
-    version: "0.0.4-beta"
+    version: "1.0.0"
   misskey_emoji:
     dependency: "direct main"
     description:
