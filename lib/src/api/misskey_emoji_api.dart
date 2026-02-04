@@ -6,9 +6,10 @@ import '../util/shortcode.dart';
 
 /// Misskeyの絵文字APIラッパー
 class MisskeyEmojiApi {
+  MisskeyEmojiApi(this.http);
+
   /// misskey_api_coreの低レベルHTTPクライアント
   final MisskeyHttpClient http;
-  MisskeyEmojiApi(this.http);
 
   /// Misskeyサーバーからカスタム絵文字の一覧を取得する処理
   ///

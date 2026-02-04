@@ -17,6 +17,14 @@ typedef EmojiScorer =
 
 /// 検索オプション
 class EmojiSearchOptions {
+  const EmojiSearchOptions({
+    this.category,
+    this.limit = 50,
+    this.mode = EmojiSearchMode.prefix,
+    this.includeAliases = true,
+    this.scorer,
+  });
+
   /// カテゴリでの絞り込み（null なら全カテゴリ）
   final String? category;
 
@@ -31,18 +39,17 @@ class EmojiSearchOptions {
 
   /// カスタムスコアラー（未指定時はデフォルトロジック）
   final EmojiScorer? scorer;
-
-  const EmojiSearchOptions({
-    this.category,
-    this.limit = 50,
-    this.mode = EmojiSearchMode.prefix,
-    this.includeAliases = true,
-    this.scorer,
-  });
 }
 
 /// 単一の検索結果（スコアとマッチ情報付き）
 class EmojiSearchResult {
+  const EmojiSearchResult({
+    required this.record,
+    required this.score,
+    required this.matched,
+    required this.matchedIsAlias,
+  });
+
   /// 対象のレコード
   final EmojiRecord record;
 
@@ -54,20 +61,14 @@ class EmojiSearchResult {
 
   /// マッチしたのがaliasかどうか
   final bool matchedIsAlias;
-
-  const EmojiSearchResult({
-    required this.record,
-    required this.score,
-    required this.matched,
-    required this.matchedIsAlias,
-  });
 }
 
 /// [EmojiCatalog]に対する簡易検索ヘルパー
 class EmojiSearch {
+  EmojiSearch(this.catalog);
+
   /// 検索対象のカタログ
   final EmojiCatalog catalog;
-  EmojiSearch(this.catalog);
 
   /// 互換の簡易API（前方一致）
   ///
@@ -78,7 +79,6 @@ class EmojiSearch {
       options: EmojiSearchOptions(
         category: category,
         limit: limit,
-        mode: EmojiSearchMode.prefix,
       ),
     );
     return results.map((r) => r.record).toList(growable: false);
@@ -194,7 +194,6 @@ class EmojiSearch {
       name: key,
       aliases: const [],
       url: '',
-      category: null,
       localOnly: false,
       isSensitive: false,
       allowRoleIds: const [],

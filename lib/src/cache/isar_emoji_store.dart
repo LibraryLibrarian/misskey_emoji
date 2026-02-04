@@ -50,9 +50,10 @@ EmojiRecord fromEntity(EmojiRecordEntity e) {
 
 /// [EmojiStore]のIsar実装
 class IsarEmojiStore implements EmojiStore {
+  IsarEmojiStore(this.isar);
+
   /// オープン済みのIsarインスタンス
   final Isar isar;
-  IsarEmojiStore(this.isar);
 
   @override
   Future<List<EmojiRecord>> loadAll() async {

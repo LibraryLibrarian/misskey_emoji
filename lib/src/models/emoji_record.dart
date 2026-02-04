@@ -1,5 +1,16 @@
 /// キャッシュに保存され、解決に用いられる不変の絵文字レコード
 class EmojiRecord {
+  const EmojiRecord({
+    required this.name,
+    required this.aliases,
+    required this.url,
+    this.category,
+    required this.localOnly,
+    required this.isSensitive,
+    required this.allowRoleIds,
+    required this.denyRoleIds,
+  });
+
   /// 正規化済みのプライマリショートコード名
   final String name;
 
@@ -23,17 +34,6 @@ class EmojiRecord {
 
   /// この絵文字をリアクションとして使用不可なロールID群
   final List<String> denyRoleIds;
-
-  const EmojiRecord({
-    required this.name,
-    required this.aliases,
-    required this.url,
-    this.category,
-    required this.localOnly,
-    required this.isSensitive,
-    required this.allowRoleIds,
-    required this.denyRoleIds,
-  });
 
   /// アニメーション画像かどうかの簡易推定
   bool get animated {

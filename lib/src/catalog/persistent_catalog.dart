@@ -16,6 +16,14 @@ import 'catalog.dart';
 /// - 同期成功後は最新の絵文字を[store]に保存
 /// - TTLとエラー時クールダウンを尊重して無駄な再試行を避ける
 class PersistentEmojiCatalog implements EmojiCatalog {
+  PersistentEmojiCatalog({
+    required this.api,
+    required this.store,
+    this.meta,
+    this.ttl = const Duration(minutes: 30),
+    this.errorCooldown = const Duration(minutes: 2),
+  });
+
   /// 絵文字取得に用いるAPIクライアント
   final MisskeyEmojiApi api;
 
@@ -35,14 +43,6 @@ class PersistentEmojiCatalog implements EmojiCatalog {
   DateTime? _lastError;
   Future<void>? _ongoing;
   Map<String, EmojiRecord> _byKey = {};
-
-  PersistentEmojiCatalog({
-    required this.api,
-    required this.store,
-    this.meta,
-    this.ttl = const Duration(minutes: 30),
-    this.errorCooldown = const Duration(minutes: 2),
-  });
 
   @override
   EmojiRecord? get(String code) => _byKey[normalizeShortcode(code)];

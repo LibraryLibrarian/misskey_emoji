@@ -3,6 +3,12 @@ import '../models/emoji_record.dart';
 
 /// 解決済みの絵文字画像情報（描画に必要な最小限の属性）
 class EmojiImage {
+  const EmojiImage({
+    required this.url,
+    required this.animated,
+    required this.isSensitive,
+  });
+
   /// 画像の URL
   final Uri url;
 
@@ -11,12 +17,6 @@ class EmojiImage {
 
   /// センシティブフラグ
   final bool isSensitive;
-
-  const EmojiImage({
-    required this.url,
-    required this.animated,
-    required this.isSensitive,
-  });
 }
 
 /// ショートコードを表示可能な[EmojiImage]に解決する
@@ -28,10 +28,10 @@ abstract class EmojiResolver {
 
 /// [EmojiCatalog]を用いたデフォルトのリゾルバ実装
 class MisskeyEmojiResolver implements EmojiResolver {
+  MisskeyEmojiResolver(this.catalog);
+
   /// 参照・同期に用いるカタログ
   final EmojiCatalog catalog;
-
-  MisskeyEmojiResolver(this.catalog);
 
   @override
   /// ショートコードを[EmojiImage]に解決する

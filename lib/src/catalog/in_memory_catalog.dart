@@ -15,6 +15,13 @@ import 'catalog.dart';
 /// - メモリにTTL付きで保持
 /// - 同期エラー時にはクールダウンを適用
 class InMemoryEmojiCatalog implements EmojiCatalog {
+  InMemoryEmojiCatalog({
+    required this.api,
+    this.meta,
+    this.ttl = const Duration(minutes: 30),
+    this.errorCooldown = const Duration(minutes: 2),
+  });
+
   /// 絵文字取得に用いるAPIクライアント
   final MisskeyEmojiApi api;
 
@@ -31,13 +38,6 @@ class InMemoryEmojiCatalog implements EmojiCatalog {
   DateTime? _lastError;
   Future<void>? _ongoing;
   Map<String, EmojiRecord> _byKey = {};
-
-  InMemoryEmojiCatalog({
-    required this.api,
-    this.meta,
-    this.ttl = const Duration(minutes: 30),
-    this.errorCooldown = const Duration(minutes: 2),
-  });
 
   /// 指定ショートコードのレコードを返す（なければnull）
   @override
