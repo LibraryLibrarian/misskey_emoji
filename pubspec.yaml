@@ -18,6 +18,7 @@ dev_dependencies:
     sdk: flutter
   isar_community_generator: ^3.3.0
   json_serializable: ^6.7.1
+  pedantic_mono: ^1.33.0
   pubspec_dependency_sorter: ^1.0.5
 platforms:
   android:
