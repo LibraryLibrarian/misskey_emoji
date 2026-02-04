@@ -19,21 +19,22 @@ class EmojiImage {
   final bool isSensitive;
 }
 
-/// ショートコードを表示可能な[EmojiImage]に解決する
-abstract class EmojiResolver {
-  /// 周囲のコロン有無に関わらずショートコードから[EmojiImage]を解決する
-  /// 見つからない場合はnullを返す
-  Future<EmojiImage?> resolve(String shortcodeOrColonWrapped);
-}
+/// ショートコードを表示可能な[EmojiImage]に解決する関数型
+///
+/// 周囲のコロン有無に関わらずショートコードから[EmojiImage]を解決する
+/// 見つからない場合はnullを返す
+typedef EmojiResolver =
+    Future<EmojiImage?> Function(
+      String shortcodeOrColonWrapped,
+    );
 
 /// [EmojiCatalog]を用いたデフォルトのリゾルバ実装
-class MisskeyEmojiResolver implements EmojiResolver {
+class MisskeyEmojiResolver {
   MisskeyEmojiResolver(this.catalog);
 
   /// 参照・同期に用いるカタログ
   final EmojiCatalog catalog;
 
-  @override
   /// ショートコードを[EmojiImage]に解決する
   ///
   /// キャッシュミス時には1度だけ同期してから再試行する
@@ -46,6 +47,9 @@ class MisskeyEmojiResolver implements EmojiResolver {
       isSensitive: rec.isSensitive,
     );
   }
+
+  /// 関数オブジェクトとして呼び出せるようにする
+  Future<EmojiImage?> call(String code) => resolve(code);
 
   Future<EmojiRecord?> _syncAndRetry(String code) async {
     await catalog.sync();

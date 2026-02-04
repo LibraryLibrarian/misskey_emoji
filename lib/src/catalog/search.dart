@@ -146,13 +146,13 @@ class EmojiSearch {
       }
     }
 
-    final list = byRecord.values.toList();
-    // スコア降順、同点は名前昇順
-    list.sort((a, b) {
-      final c = b.score.compareTo(a.score);
-      if (c != 0) return c;
-      return a.record.name.compareTo(b.record.name);
-    });
+    final list = byRecord.values.toList()
+      // スコア降順、同点は名前昇順
+      ..sort((a, b) {
+        final c = b.score.compareTo(a.score);
+        if (c != 0) return c;
+        return a.record.name.compareTo(b.record.name);
+      });
     if (list.length > options.limit) {
       return list.sublist(0, options.limit);
     }

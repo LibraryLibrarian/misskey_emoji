@@ -85,7 +85,7 @@ class InMemoryEmojiCatalog implements EmojiCatalog {
       _byKey = _index(newest);
       _last = DateTime.now();
       _lastError = null;
-    } catch (_) {
+    } on Exception {
       // 既存のキャッシュを保持; エラー時間を記録してクールダウンを適用
       _lastError = DateTime.now();
     }
