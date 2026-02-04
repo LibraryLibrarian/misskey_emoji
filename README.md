@@ -1,14 +1,11 @@
-# Misskey Emoji
+# misskey_emoji
 
-[![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
-
-**Language**: [🇺🇸 English](#english) | [🇯🇵 日本語](#japanese)
-
----
-
-## English
+[![Pub package](https://img.shields.io/pub/v/misskey_emoji.svg)](https://pub.dev/packages/misskey_emoji)
+[![GitHub License](https://img.shields.io/badge/License-BSD-green.svg)](LICENSE)
 
 A Flutter library for caching and resolving Misskey MFM (Markup For Misskey) emoji metadata with persistent storage and efficient retrieval.
+
+[日本語](#日本語)
 
 ### Features
 
@@ -147,7 +144,6 @@ Misskey MFM（Markup For Misskey）絵文字のメタデータのキャッシュ
 - インメモリおよび永続化カタログの実装
 - ショートコードとキーワードによる絵文字検索機能
 - Misskey APIとの統合による絵文字同期
-- クロスプラットフォーム対応（iOS/Android）
 - MFM（Markup For Misskey）絵文字処理の最適化
 - **注意**: 画像データのキャッシュは`cached_network_image`などのライブラリを使用してアプリケーション側で実装してください
 
