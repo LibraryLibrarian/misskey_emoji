@@ -24,7 +24,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  misskey_emoji: ^0.0.1-beta
+  misskey_emoji: ^1.0.0
 ```
 
 ### Quick Start
@@ -153,7 +153,7 @@ Misskey MFM（Markup For Misskey）絵文字のメタデータのキャッシュ
 
 ```yaml
 dependencies:
-  misskey_emoji: ^0.0.1-beta
+  misskey_emoji: ^1.0.0
 ```
 
 ### クイックスタート
