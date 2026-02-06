@@ -9,6 +9,7 @@ class EmojiGrid extends StatefulWidget {
   final MisskeyEmojiResolver? resolver;
   final Future<void> Function() onSync;
   final String searchText;
+  final int catalogVersion;
 
   const EmojiGrid({
     super.key,
@@ -16,6 +17,7 @@ class EmojiGrid extends StatefulWidget {
     required this.resolver,
     required this.onSync,
     required this.searchText,
+    required this.catalogVersion,
   });
 
   @override
@@ -33,6 +35,7 @@ class _EmojiGridState extends State<EmojiGrid> {
   String? _lastCategory;
   bool _cacheDirty = true;
   PersistentEmojiCatalog? _lastCatalog;
+  int _lastCatalogVersion = -1;
   List<EmojiRecord> _cachedItems = [];
   Map<String, int> _cachedCategoryCounts = {};
 
@@ -100,6 +103,10 @@ class _EmojiGridState extends State<EmojiGrid> {
       _cacheDirty = true;
     }
 
+    if (_lastCatalogVersion != widget.catalogVersion) {
+      _cacheDirty = true;
+    }
+
     if (!_cacheDirty &&
         searchText == _lastQuery &&
         _selectedCategory == _lastCategory) {
@@ -107,6 +114,7 @@ class _EmojiGridState extends State<EmojiGrid> {
     }
 
     _lastCatalog = catalog;
+    _lastCatalogVersion = widget.catalogVersion;
     _lastQuery = searchText;
     _lastCategory = _selectedCategory;
     _cacheDirty = false;
@@ -174,23 +182,12 @@ class _EmojiGridState extends State<EmojiGrid> {
                       const SizedBox(height: 16),
                       Text(
                         widget.searchText.isEmpty
-                            ? '絵文字を同期してください'
+                            ? '絵文字がありません'
                             : '該当する絵文字がありません',
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                               color: Theme.of(context).colorScheme.outline,
                             ),
                       ),
-                      if (widget.searchText.isEmpty) ...[
-                        const SizedBox(height: 16),
-                        FilledButton.icon(
-                          icon: const Icon(Icons.sync),
-                          onPressed: () async {
-                            await widget.onSync();
-                            if (mounted) setState(() => _cacheDirty = true);
-                          },
-                          label: const Text('今すぐ同期'),
-                        ),
-                      ],
                     ],
                   ),
                 ),

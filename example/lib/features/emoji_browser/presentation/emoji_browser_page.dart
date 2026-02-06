@@ -17,8 +17,6 @@ class EmojiBrowserPage extends StatefulWidget {
 }
 
 class _EmojiBrowserPageState extends State<EmojiBrowserPage> {
-  late final TextEditingController _serverNameController;
-  late final TextEditingController _serverUrlController;
   late final TextEditingController _searchController;
   final ServerManager _manager = ServerManager();
   bool _isAppBarVisible = true;
@@ -27,16 +25,14 @@ class _EmojiBrowserPageState extends State<EmojiBrowserPage> {
   @override
   void initState() {
     super.initState();
-    _serverNameController = TextEditingController();
-    _serverUrlController = TextEditingController();
     _searchController = TextEditingController();
     unawaited(_manager.init().then((_) => _autoSyncIfNeeded()));
   }
-  
+
   Future<void> _autoSyncIfNeeded() async {
     final catalog = _manager.currentContext?.catalog;
     if (catalog == null) return;
-    
+
     // カタログが空の場合は自動同期
     final snapshot = catalog.snapshot();
     if (snapshot.isEmpty && !_manager.isSyncing) {
@@ -46,8 +42,6 @@ class _EmojiBrowserPageState extends State<EmojiBrowserPage> {
 
   @override
   void dispose() {
-    _serverNameController.dispose();
-    _serverUrlController.dispose();
     _searchController.dispose();
     unawaited(_manager.close());
     _manager.dispose();
@@ -62,16 +56,6 @@ class _EmojiBrowserPageState extends State<EmojiBrowserPage> {
       } else if (direction == ScrollDirection.forward && !_isAppBarVisible) {
         setState(() => _isAppBarVisible = true);
       }
-    }
-  }
-
-  Future<void> _handleAddServer() async {
-    final name = _serverNameController.text.trim();
-    final url = _serverUrlController.text.trim();
-    final ok = await _manager.addServer(name, url);
-    if (ok) {
-      _serverNameController.clear();
-      _serverUrlController.clear();
     }
   }
 
@@ -144,6 +128,8 @@ class _EmojiBrowserPageState extends State<EmojiBrowserPage> {
                   resolver: _manager.currentContext?.resolver,
                   onSync: _manager.sync,
                   searchText: _searchText,
+                  catalogVersion:
+                      _manager.catalogVersionFor(_manager.selectedKey),
                 ),
               ),
               Positioned(
@@ -194,37 +180,36 @@ class _EmojiBrowserPageState extends State<EmojiBrowserPage> {
 
   Future<void> _navigateToSettings(BuildContext context) async {
     final hadServer = _manager.selectedServer != null;
+    final previousKey = _manager.selectedKey;
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => SettingsPage(
-          servers: _manager.servers,
-          selectedKey: _manager.selectedKey,
-          onSelectServer: _manager.selectServer,
-          serverNameController: _serverNameController,
-          serverUrlController: _serverUrlController,
-          onAddServer: _handleAddServer,
-          onRemoveSelected: _manager.removeSelectedServer,
-          onTestConnection: _manager.testConnection,
-          onClearCache: _manager.clearCache,
-          statusText: _manager.status,
-          lastSync: _manager.lastSync,
-          isSyncing: _manager.isSyncing,
-        ),
+        builder: (context) => SettingsPage(manager: _manager),
       ),
     );
-    
-    // 設定画面から戻った後、サーバーが新規追加されていたら自動同期
+
+    // 設定画面から戻った後の自動同期処理
     final hasServerNow = _manager.selectedServer != null;
     final catalog = _manager.currentContext?.catalog;
-    if (!hadServer && hasServerNow && catalog != null) {
+    final serverChanged = _manager.selectedKey != previousKey;
+
+    if (!hasServerNow || catalog == null) return;
+
+    if (!hadServer) {
       // サーバーが新規に追加された場合
       unawaited(_manager.sync());
-    } else if (hadServer && hasServerNow && catalog != null) {
-      // 既にサーバーがある場合でも、カタログが空なら同期
-      final snapshot = catalog.snapshot();
-      if (snapshot.isEmpty) {
-        unawaited(_manager.sync());
-      }
+      return;
+    }
+
+    if (serverChanged) {
+      // アクティブサーバーが変更された場合は必ず同期
+      unawaited(_manager.sync());
+      return;
+    }
+
+    // 同じサーバーでもカタログが空なら同期
+    final snapshot = catalog.snapshot();
+    if (snapshot.isEmpty) {
+      unawaited(_manager.sync());
     }
   }
 }
