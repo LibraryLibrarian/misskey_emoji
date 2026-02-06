@@ -48,22 +48,24 @@ class _EmojiGridState extends State<EmojiGrid> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.emoji_emotions_outlined,
+              Icons.dns_outlined,
               size: 64,
               color: Theme.of(context).colorScheme.outline,
             ),
             const SizedBox(height: 16),
             Text(
-              '設定からサーバーを選択してください',
+              'サーバーを設定してください',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     color: Theme.of(context).colorScheme.outline,
                   ),
             ),
-            const SizedBox(height: 16),
-            FilledButton.icon(
-              icon: const Icon(Icons.settings),
-              onPressed: () => Scaffold.of(context).openDrawer(),
-              label: const Text('設定を開く'),
+            const SizedBox(height: 8),
+            Text(
+              '設定画面からMisskeyサーバーを追加できます',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),

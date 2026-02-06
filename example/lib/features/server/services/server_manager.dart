@@ -56,17 +56,16 @@ class ServerManager extends ChangeNotifier {
         servers = servers.where((e) => seen.add(e.key)).toList();
       }
     }
-    if (servers.isEmpty) {
-      servers = [ServerEntry(name: 'misskey.io', url: 'https://misskey.io')];
-      await prefs.setString(
-          _serversKey, json.encode(servers.map((e) => e.toJson()).toList()));
-    }
-    String selectedKey = last ?? servers.first.key;
-    final selectedEntry = servers.firstWhere((e) => e.key == selectedKey,
-        orElse: () => servers.first);
-    await _ensureContextFor(selectedEntry);
     _servers = servers;
-    _selectedKey = selectedEntry.key;
+    if (servers.isNotEmpty) {
+      String selectedKey = last ?? servers.first.key;
+      final selectedEntry = servers.firstWhere((e) => e.key == selectedKey,
+          orElse: () => servers.first);
+      await _ensureContextFor(selectedEntry);
+      _selectedKey = selectedEntry.key;
+    } else {
+      _selectedKey = null;
+    }
     _status = '準備完了';
     _initialized = true;
     notifyListeners();

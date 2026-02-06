@@ -28,9 +28,20 @@ class _EmojiBrowserPageState extends State<EmojiBrowserPage> {
   void initState() {
     super.initState();
     _serverNameController = TextEditingController();
-    _serverUrlController = TextEditingController(text: 'https://misskey.io');
+    _serverUrlController = TextEditingController();
     _searchController = TextEditingController();
-    unawaited(_manager.init());
+    unawaited(_manager.init().then((_) => _autoSyncIfNeeded()));
+  }
+  
+  Future<void> _autoSyncIfNeeded() async {
+    final catalog = _manager.currentContext?.catalog;
+    if (catalog == null) return;
+    
+    // カタログが空の場合は自動同期
+    final snapshot = catalog.snapshot();
+    if (snapshot.isEmpty && !_manager.isSyncing) {
+      await _manager.sync();
+    }
   }
 
   @override
@@ -60,6 +71,7 @@ class _EmojiBrowserPageState extends State<EmojiBrowserPage> {
     final ok = await _manager.addServer(name, url);
     if (ok) {
       _serverNameController.clear();
+      _serverUrlController.clear();
     }
   }
 
@@ -181,6 +193,7 @@ class _EmojiBrowserPageState extends State<EmojiBrowserPage> {
   }
 
   Future<void> _navigateToSettings(BuildContext context) async {
+    final hadServer = _manager.selectedServer != null;
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => SettingsPage(
@@ -199,5 +212,19 @@ class _EmojiBrowserPageState extends State<EmojiBrowserPage> {
         ),
       ),
     );
+    
+    // 設定画面から戻った後、サーバーが新規追加されていたら自動同期
+    final hasServerNow = _manager.selectedServer != null;
+    final catalog = _manager.currentContext?.catalog;
+    if (!hadServer && hasServerNow && catalog != null) {
+      // サーバーが新規に追加された場合
+      unawaited(_manager.sync());
+    } else if (hadServer && hasServerNow && catalog != null) {
+      // 既にサーバーがある場合でも、カタログが空なら同期
+      final snapshot = catalog.snapshot();
+      if (snapshot.isEmpty) {
+        unawaited(_manager.sync());
+      }
+    }
   }
 }
