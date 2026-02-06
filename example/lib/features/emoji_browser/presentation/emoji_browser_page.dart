@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
 import '../../server/models/server_entry.dart';
-import '../../server/presentation/settings_drawer.dart';
+import '../../server/presentation/settings_page.dart';
 import '../../server/services/server_manager.dart';
 import 'widgets/emoji_grid.dart';
 import 'widgets/emoji_search_bar.dart';
@@ -120,55 +120,84 @@ class _EmojiBrowserPageState extends State<EmojiBrowserPage> {
                       : null,
                 )
               : null,
-          drawer: SettingsDrawer(
-            servers: _manager.servers,
-            selectedKey: _manager.selectedKey,
-            onSelectServer: _manager.selectServer,
-            serverNameController: _serverNameController,
-            serverUrlController: _serverUrlController,
-            onAddServer: _handleAddServer,
-            onRemoveSelected: _manager.removeSelectedServer,
-            onTestConnection: _manager.testConnection,
-            onSync: _manager.sync,
-            onClearCache: _manager.clearCache,
-            statusText: _manager.status,
-            lastSync: _manager.lastSync,
-            isSyncing: _manager.isSyncing,
-          ),
-          body: NotificationListener<ScrollNotification>(
-            onNotification: (notification) {
-              _handleScrollNotification(notification);
-              return false;
-            },
-            child: EmojiGrid(
-              catalog: _manager.currentContext?.catalog,
-              resolver: _manager.currentContext?.resolver,
-              onSync: _manager.sync,
-              searchText: _searchText,
-            ),
-          ),
-          bottomNavigationBar: Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, -2),
-                ),
-              ],
-            ),
-            child: SafeArea(
-              child: EmojiSearchBar(
-                controller: _searchController,
-                onChanged: (text) {
-                  setState(() => _searchText = text.trim());
+          body: Stack(
+            children: [
+              NotificationListener<ScrollNotification>(
+                onNotification: (notification) {
+                  _handleScrollNotification(notification);
+                  return false;
                 },
+                child: EmojiGrid(
+                  catalog: _manager.currentContext?.catalog,
+                  resolver: _manager.currentContext?.resolver,
+                  onSync: _manager.sync,
+                  searchText: _searchText,
+                ),
               ),
-            ),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: SafeArea(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(right: 16),
+                        child: FloatingActionButton(
+                          onPressed: () => _navigateToSettings(context),
+                          tooltip: '設定',
+                          child: const Icon(Icons.settings),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        decoration: BoxDecoration(
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              blurRadius: 8,
+                              offset: const Offset(0, -2),
+                            ),
+                          ],
+                        ),
+                        child: EmojiSearchBar(
+                          controller: _searchController,
+                          onChanged: (text) {
+                            setState(() => _searchText = text.trim());
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         );
       },
+    );
+  }
+
+  Future<void> _navigateToSettings(BuildContext context) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => SettingsPage(
+          servers: _manager.servers,
+          selectedKey: _manager.selectedKey,
+          onSelectServer: _manager.selectServer,
+          serverNameController: _serverNameController,
+          serverUrlController: _serverUrlController,
+          onAddServer: _handleAddServer,
+          onRemoveSelected: _manager.removeSelectedServer,
+          onTestConnection: _manager.testConnection,
+          onClearCache: _manager.clearCache,
+          statusText: _manager.status,
+          lastSync: _manager.lastSync,
+          isSyncing: _manager.isSyncing,
+        ),
+      ),
     );
   }
 }

@@ -36,7 +36,6 @@ class _EmojiGridState extends State<EmojiGrid> {
   List<EmojiRecord> _cachedItems = [];
   Map<String, int> _cachedCategoryCounts = {};
 
-
   @override
   Widget build(BuildContext context) {
     final catalog = widget.catalog;
@@ -157,6 +156,7 @@ class _EmojiGridState extends State<EmojiGrid> {
       child: items.isEmpty
           ? ListView(
               physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.only(bottom: 88),
               children: [
                 const SizedBox(height: 200),
                 Center(
@@ -196,7 +196,12 @@ class _EmojiGridState extends State<EmojiGrid> {
               ],
             )
           : GridView.builder(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.only(
+                left: 8,
+                right: 8,
+                top: 8,
+                bottom: 88,
+              ),
               gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                 maxCrossAxisExtent: crossAxisExtent,
                 crossAxisSpacing: 8,
