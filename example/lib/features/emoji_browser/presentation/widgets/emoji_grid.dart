@@ -3,18 +3,19 @@ import 'package:misskey_emoji/misskey_emoji.dart';
 
 import 'category_filter.dart';
 import 'emoji_grid_item.dart';
-import 'emoji_search_bar.dart';
 
 class EmojiGrid extends StatefulWidget {
   final PersistentEmojiCatalog? catalog;
   final MisskeyEmojiResolver? resolver;
   final Future<void> Function() onSync;
+  final String searchText;
 
   const EmojiGrid({
     super.key,
     required this.catalog,
     required this.resolver,
     required this.onSync,
+    required this.searchText,
   });
 
   @override
@@ -25,9 +26,7 @@ class _EmojiGridState extends State<EmojiGrid> {
   static const String _uncategorizedLabel = '未分類';
   static const int _searchLimit = 5000;
 
-  late final TextEditingController _searchController;
   String? _selectedCategory;
-  String _searchText = '';
   final Set<String> _revealedSensitive = <String>{};
 
   String _lastQuery = '';
@@ -37,17 +36,6 @@ class _EmojiGridState extends State<EmojiGrid> {
   List<EmojiRecord> _cachedItems = [];
   Map<String, int> _cachedCategoryCounts = {};
 
-  @override
-  void initState() {
-    super.initState();
-    _searchController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -90,14 +78,6 @@ class _EmojiGridState extends State<EmojiGrid> {
 
     return Column(
       children: [
-        EmojiSearchBar(
-          controller: _searchController,
-          onChanged: (text) {
-            setState(() {
-              _searchText = text.trim();
-            });
-          },
-        ),
         CategoryFilter(
           categories: sortedCategories,
           counts: categoryCounts,
@@ -113,22 +93,24 @@ class _EmojiGridState extends State<EmojiGrid> {
   }
 
   void _recalculate(PersistentEmojiCatalog catalog) {
+    final searchText = widget.searchText;
+
     if (_lastCatalog != catalog) {
       _cacheDirty = true;
     }
 
     if (!_cacheDirty &&
-        _searchText == _lastQuery &&
+        searchText == _lastQuery &&
         _selectedCategory == _lastCategory) {
       return;
     }
 
     _lastCatalog = catalog;
-    _lastQuery = _searchText;
+    _lastQuery = searchText;
     _lastCategory = _selectedCategory;
     _cacheDirty = false;
 
-    final text = _searchText;
+    final text = searchText;
     final List<EmojiRecord> baseList = text.isEmpty
         ? catalog
             .snapshot()
@@ -181,7 +163,7 @@ class _EmojiGridState extends State<EmojiGrid> {
                   child: Column(
                     children: [
                       Icon(
-                        _searchText.isEmpty
+                        widget.searchText.isEmpty
                             ? Icons.sync_problem
                             : Icons.search_off,
                         size: 48,
@@ -189,12 +171,14 @@ class _EmojiGridState extends State<EmojiGrid> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        _searchText.isEmpty ? '絵文字を同期してください' : '該当する絵文字がありません',
+                        widget.searchText.isEmpty
+                            ? '絵文字を同期してください'
+                            : '該当する絵文字がありません',
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                               color: Theme.of(context).colorScheme.outline,
                             ),
                       ),
-                      if (_searchText.isEmpty) ...[
+                      if (widget.searchText.isEmpty) ...[
                         const SizedBox(height: 16),
                         FilledButton.icon(
                           icon: const Icon(Icons.sync),

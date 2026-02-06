@@ -43,23 +43,52 @@ class _EmojiSearchBarState extends State<EmojiSearchBar> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return Padding(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: TextField(
         controller: widget.controller,
         decoration: InputDecoration(
-          border: const OutlineInputBorder(),
+          filled: true,
+          fillColor: colorScheme.surfaceContainerHighest,
           hintText: '絵文字名で検索（前方一致）',
-          prefixIcon: const Icon(Icons.search),
+          hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+          prefixIcon: Icon(
+            Icons.search,
+            color: colorScheme.onSurfaceVariant,
+          ),
           suffixIcon: widget.controller.text.isNotEmpty
               ? IconButton(
-                  icon: const Icon(Icons.clear),
+                  icon: Icon(
+                    Icons.clear,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                   onPressed: () {
                     widget.controller.clear();
                     _onSearchChanged('');
                   },
                 )
               : null,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(28),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(28),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(28),
+            borderSide: BorderSide(
+              color: colorScheme.primary,
+              width: 1,
+            ),
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
         ),
         onChanged: _onSearchChanged,
       ),
