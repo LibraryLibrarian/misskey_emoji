@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:misskey_emoji/misskey_emoji.dart';
 
-import 'category_filter.dart';
 import 'emoji_grid_item.dart';
 
 class EmojiGrid extends StatefulWidget {
@@ -9,7 +8,9 @@ class EmojiGrid extends StatefulWidget {
   final MisskeyEmojiResolver? resolver;
   final Future<void> Function() onSync;
   final String searchText;
+  final String? selectedCategory;
   final int catalogVersion;
+  final ScrollController? scrollController;
 
   const EmojiGrid({
     super.key,
@@ -17,7 +18,9 @@ class EmojiGrid extends StatefulWidget {
     required this.resolver,
     required this.onSync,
     required this.searchText,
+    this.selectedCategory,
     required this.catalogVersion,
+    this.scrollController,
   });
 
   @override
@@ -28,7 +31,6 @@ class _EmojiGridState extends State<EmojiGrid> {
   static const String _uncategorizedLabel = '未分類';
   static const int _searchLimit = 5000;
 
-  String? _selectedCategory;
   final Set<String> _revealedSensitive = <String>{};
 
   String _lastQuery = '';
@@ -37,7 +39,6 @@ class _EmojiGridState extends State<EmojiGrid> {
   PersistentEmojiCatalog? _lastCatalog;
   int _lastCatalogVersion = -1;
   List<EmojiRecord> _cachedItems = [];
-  Map<String, int> _cachedCategoryCounts = {};
 
   @override
   Widget build(BuildContext context) {
@@ -77,27 +78,13 @@ class _EmojiGridState extends State<EmojiGrid> {
 
     _recalculate(catalog);
     final items = _cachedItems;
-    final categoryCounts = _cachedCategoryCounts;
-    final sortedCategories = categoryCounts.keys.toList()..sort();
 
-    return Column(
-      children: [
-        CategoryFilter(
-          categories: sortedCategories,
-          counts: categoryCounts,
-          selectedCategory: _selectedCategory,
-          onSelected: (value) => setState(() => _selectedCategory = value),
-        ),
-        const Divider(height: 1),
-        Expanded(
-          child: _buildEmojiGrid(items, resolver),
-        ),
-      ],
-    );
+    return _buildEmojiGrid(items, resolver);
   }
 
   void _recalculate(PersistentEmojiCatalog catalog) {
     final searchText = widget.searchText;
+    final selectedCategory = widget.selectedCategory;
 
     if (_lastCatalog != catalog) {
       _cacheDirty = true;
@@ -109,14 +96,14 @@ class _EmojiGridState extends State<EmojiGrid> {
 
     if (!_cacheDirty &&
         searchText == _lastQuery &&
-        _selectedCategory == _lastCategory) {
+        selectedCategory == _lastCategory) {
       return;
     }
 
     _lastCatalog = catalog;
     _lastCatalogVersion = widget.catalogVersion;
     _lastQuery = searchText;
-    _lastCategory = _selectedCategory;
+    _lastCategory = selectedCategory;
     _cacheDirty = false;
 
     final text = searchText;
@@ -129,26 +116,16 @@ class _EmojiGridState extends State<EmojiGrid> {
             .toList()
         : EmojiSearch(catalog).query(text, limit: _searchLimit);
 
-    final Map<String, int> categoryCounts = <String, int>{};
-    for (final e in baseList) {
-      final c = (e.category == null || e.category!.isEmpty)
-          ? _uncategorizedLabel
-          : e.category!;
-      categoryCounts[c] = (categoryCounts[c] ?? 0) + 1;
-    }
-
-    final selected = _selectedCategory;
     final filteredItems = baseList.where((e) {
-      if (selected == null) return true;
-      if (selected == _uncategorizedLabel) {
+      if (selectedCategory == null) return true;
+      if (selectedCategory == _uncategorizedLabel) {
         return e.category == null || e.category!.isEmpty;
       }
-      return e.category == selected;
+      return e.category == selectedCategory;
     }).toList()
       ..sort((a, b) => a.name.compareTo(b.name));
 
     _cachedItems = filteredItems;
-    _cachedCategoryCounts = categoryCounts;
   }
 
   Widget _buildEmojiGrid(
@@ -165,6 +142,7 @@ class _EmojiGridState extends State<EmojiGrid> {
       },
       child: items.isEmpty
           ? ListView(
+              controller: widget.scrollController,
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.only(bottom: 88),
               children: [
@@ -195,6 +173,7 @@ class _EmojiGridState extends State<EmojiGrid> {
               ],
             )
           : GridView.builder(
+              controller: widget.scrollController,
               padding: const EdgeInsets.only(
                 left: 8,
                 right: 8,

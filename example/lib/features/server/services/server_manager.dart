@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:isar_community/isar.dart';
 import 'package:misskey_api_core/misskey_api_core.dart';
 import 'package:misskey_emoji/misskey_emoji.dart';
 import 'package:path_provider/path_provider.dart';
@@ -229,7 +228,7 @@ class ServerManager extends ChangeNotifier {
               orElse: () => null,
             );
         if (entry == null) return -1;
-        
+
         await _ensureContextFor(entry);
         final newCtx = _contexts[key];
         if (newCtx == null) return -1;
