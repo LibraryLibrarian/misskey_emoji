@@ -25,6 +25,9 @@ class MockEmojiCatalog implements EmojiCatalog {
     syncCalled = true;
     syncCallCount++;
   }
+
+  @override
+  Future<void> dispose() async {}
 }
 
 void main() {
@@ -205,6 +208,26 @@ void main() {
 
       expect(result, isNotNull);
       expect(result!.url.toString(), equals('https://example.com/emoji.png'));
+    });
+
+    test('dispose後にresolveするとStateErrorを投げる', () async {
+      final catalog = MockEmojiCatalog(mockRecords: {});
+      final resolver = MisskeyEmojiResolver(catalog);
+
+      await resolver.dispose();
+
+      expect(() => resolver.resolve('test'), throwsA(isA<StateError>()));
+      expect(() => resolver.call('test'), throwsA(isA<StateError>()));
+    });
+
+    test('disposeは複数回呼べる', () async {
+      final catalog = MockEmojiCatalog(mockRecords: {});
+      final resolver = MisskeyEmojiResolver(catalog);
+
+      await resolver.dispose();
+      await resolver.dispose(); // 2回目も安全
+
+      expect(() => resolver.resolve('test'), throwsA(isA<StateError>()));
     });
 
     test('URLが正しくパースされる', () async {

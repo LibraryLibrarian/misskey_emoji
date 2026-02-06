@@ -15,7 +15,17 @@ abstract class EmojiCatalog {
 
   /// 正規化済みショートコードからレコードへの不変マップを返す
   Map<String, EmojiRecord> snapshot();
+
+  /// カタログが使用するリソースをクリーンアップする
+  ///
+  /// カタログが不要になった時に呼び出す
+  /// 進行中の同期処理がある場合は、それが完了するまで待機
+  Future<void> dispose();
 }
+
+/// 同期エラー時のコールバック型定義
+typedef SyncErrorCallback =
+    void Function(Exception error, StackTrace stackTrace);
 
 /// 共通ロジックを提供するカタログのベースクラス
 abstract class EmojiCatalogBase implements EmojiCatalog {
@@ -24,6 +34,7 @@ abstract class EmojiCatalogBase implements EmojiCatalog {
     this.meta,
     this.ttl = const Duration(minutes: 30),
     this.errorCooldown = const Duration(minutes: 2),
+    this.onSyncError,
   });
 
   /// 絵文字取得に用いるAPIクライアント
@@ -38,9 +49,14 @@ abstract class EmojiCatalogBase implements EmojiCatalog {
   /// 同期失敗後に適用するクールダウン時間
   final Duration errorCooldown;
 
+  /// 同期エラー時に呼ばれるオプショナルなコールバック
+  /// デバッグやエラー監視に利用可能
+  final SyncErrorCallback? onSyncError;
+
   DateTime _last = DateTime.fromMillisecondsSinceEpoch(0);
   DateTime? _lastError;
   Future<void>? _ongoing;
+  bool _disposed = false;
 
   /// 正規化済みショートコードとレコードのインデックス
   Map<String, EmojiRecord> byKey = {};
@@ -56,8 +72,24 @@ abstract class EmojiCatalogBase implements EmojiCatalog {
   /// カタログをAPI経由で同期する
   ///
   /// - [force]がfalseの場合、[ttl]と[errorCooldown]を尊重する
+  /// - 進行中の同期がある場合、それを待機する（複数の呼び出しが1回の同期を共有）
   @override
   Future<void> sync({bool force = false}) async {
+    if (_disposed) {
+      throw StateError('Cannot sync a disposed EmojiCatalog');
+    }
+
+    // 進行中の同期があれば、それを待って完了
+    // 複数のsync呼び出しが同時にあった場合、すべてが同じ1回の同期を共有する
+    _ongoing ??= _runSync(force);
+    try {
+      await _ongoing;
+    } finally {
+      _ongoing = null;
+    }
+  }
+
+  Future<void> _runSync(bool force) async {
     await beforeSync();
 
     final now = DateTime.now();
@@ -67,12 +99,7 @@ abstract class EmojiCatalogBase implements EmojiCatalog {
         return;
       }
     }
-    _ongoing ??= _doSync();
-    try {
-      await _ongoing;
-    } finally {
-      _ongoing = null;
-    }
+    await _doSync();
   }
 
   Future<void> _doSync() async {
@@ -94,9 +121,11 @@ abstract class EmojiCatalogBase implements EmojiCatalog {
       await afterFetch(newest);
       _last = DateTime.now();
       _lastError = null;
-    } on Exception {
+    } on Exception catch (e, stackTrace) {
       // 既存のキャッシュを保持; エラー時間を記録してクールダウンを適用
       _lastError = DateTime.now();
+      // エラーコールバックがあれば通知
+      onSyncError?.call(e, stackTrace);
     }
   }
 
@@ -117,4 +146,11 @@ abstract class EmojiCatalogBase implements EmojiCatalog {
 
   /// サブクラスでフェッチ後の処理を実装（例：ストアへの保存）
   Future<void> afterFetch(List<EmojiRecord> records) async {}
+
+  @override
+  Future<void> dispose() async {
+    if (_disposed) return;
+    _disposed = true;
+    await _ongoing;
+  }
 }

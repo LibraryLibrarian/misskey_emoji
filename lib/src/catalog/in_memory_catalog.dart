@@ -12,5 +12,6 @@ class InMemoryEmojiCatalog extends EmojiCatalogBase {
     super.meta,
     super.ttl,
     super.errorCooldown,
+    super.onSyncError,
   });
 }

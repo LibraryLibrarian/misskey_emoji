@@ -7,7 +7,7 @@ A Flutter library for caching and resolving Misskey MFM (Markup For Misskey) emo
 
 [日本語](#日本語)
 
-### Features
+## Features
 
 - Emoji metadata caching with persistent storage using Isar database (names, URLs, attributes, etc.)
 - Efficient emoji resolution and retrieval by shortcode
@@ -18,7 +18,7 @@ A Flutter library for caching and resolving Misskey MFM (Markup For Misskey) emo
 - Optimized for MFM (Markup For Misskey) emoji handling
 - **Note**: Image data caching should be implemented on the application side using libraries like `cached_network_image`
 
-### Installation
+## Installation
 
 Add this to your package's `pubspec.yaml` file:
 
@@ -27,9 +27,9 @@ dependencies:
   misskey_emoji: ^1.0.0
 ```
 
-### Quick Start
+## Quick Start
 
-#### Basic Usage
+### Basic Usage
 
 ```dart
 import 'package:misskey_emoji/misskey_emoji.dart';
@@ -67,7 +67,7 @@ final searchResults = await EmojiSearch.search(
 );
 ```
 
-#### Using Emoji Resolver
+### Using Emoji Resolver
 
 ```dart
 // Create resolver for emoji resolution
@@ -82,7 +82,7 @@ if (emojiImage != null) {
 }
 ```
 
-#### Displaying Emojis with Image Caching
+### Displaying Emojis with Image Caching
 
 ```dart
 // For displaying emojis with image caching, implement on the application side
@@ -105,7 +105,7 @@ Widget buildEmoji(String shortcode) {
 }
 ```
 
-#### In-Memory Catalog (for temporary usage)
+### In-Memory Catalog (for temporary usage)
 
 ```dart
 // For cases where persistent storage is not needed
@@ -118,26 +118,173 @@ await inMemoryCatalog.sync();
 final emoji = await inMemoryCatalog.get(':example:');
 ```
 
-### API Reference
+## Resource Management
+
+When you finish using catalogs or stores, call `dispose()` to release resources.
+
+### Basic cleanup
+
+```dart
+final isar = await openEmojiIsarForServer(
+  Uri.parse('https://misskey.io'),
+  directory: '/path/to/isar',
+);
+final store = IsarEmojiStore(isar);
+final catalog = PersistentEmojiCatalog(api: emojiApi, store: store);
+
+try {
+  await catalog.sync();
+  final emoji = catalog.get(':custom_emoji:');
+} finally {
+  await catalog.dispose(); // store.dispose() is called internally
+  await isar.close(); // close Isar explicitly when you own it
+}
+```
+
+### Error handling
+
+```dart
+final catalog = PersistentEmojiCatalog(
+  api: emojiApi,
+  store: store,
+  onSyncError: (error, stackTrace) {
+    // Log errors for debugging or monitoring
+    print('Emoji sync failed: $error');
+    // You can also send to error tracking service
+  },
+);
+```
+
+### Riverpod integration examples
+
+#### Basic: Single provider with owned Isar
+
+```dart
+@riverpod
+class EmojiCatalogNotifier extends _$EmojiCatalogNotifier {
+  @override
+  FutureOr<PersistentEmojiCatalog> build() async {
+    // Create API client
+    final httpClient = MisskeyHttpClient(
+      config: MisskeyApiConfig(baseUrl: Uri.parse('https://misskey.io')),
+    );
+    final emojiApi = MisskeyEmojiApi(httpClient);
+    
+    // Create store with owned Isar instance
+    final appDir = await getApplicationDocumentsDirectory();
+    final isar = await openEmojiIsarForServer(
+      Uri.parse('https://misskey.io'),
+      directory: appDir.path,
+    );
+    final store = IsarEmojiStore(isar, ownsIsar: true);
+    final catalog = PersistentEmojiCatalog(
+      api: emojiApi,
+      store: store,
+      onSyncError: (error, stackTrace) {
+        debugPrint('Emoji sync failed: $error');
+      },
+    );
+
+    // Dispose resources when provider is disposed
+    ref.onDispose(() async {
+      await catalog.dispose(); // closes Isar because ownsIsar is true
+    });
+
+    await catalog.sync();
+    return catalog;
+  }
+}
+```
+
+#### Recommended: Shared Isar instance for better resource management
+
+```dart
+// Shared Isar instance provider (reusable across multiple catalogs)
+@riverpod
+Future<Isar> emojiIsar(Ref ref) async {
+  final appDir = await getApplicationDocumentsDirectory();
+  final isar = await openEmojiIsarForServer(
+    Uri.parse('https://misskey.io'),
+    directory: appDir.path,
+  );
+  
+  // Close Isar when the app is disposed
+  ref.onDispose(() async {
+    await isar.close();
+  });
+  
+  return isar;
+}
+
+// Emoji catalog provider using shared Isar
+@riverpod
+class EmojiCatalogNotifier extends _$EmojiCatalogNotifier {
+  @override
+  FutureOr<PersistentEmojiCatalog> build() async {
+    final httpClient = MisskeyHttpClient(
+      config: MisskeyApiConfig(baseUrl: Uri.parse('https://misskey.io')),
+    );
+    final emojiApi = MisskeyEmojiApi(httpClient);
+    
+    // Use shared Isar instance (ownsIsar: false is default)
+    final isar = await ref.watch(emojiIsarProvider.future);
+    final store = IsarEmojiStore(isar); // Isar lifecycle managed by emojiIsarProvider
+    final catalog = PersistentEmojiCatalog(
+      api: emojiApi,
+      store: store,
+      onSyncError: (error, stackTrace) {
+        // Send to error tracking service (e.g., Sentry, Firebase Crashlytics)
+        debugPrint('Emoji sync failed: $error');
+      },
+    );
+
+    ref.onDispose(() async {
+      await catalog.dispose(); // Only disposes catalog, Isar remains open
+    });
+
+    await catalog.sync();
+    return catalog;
+  }
+}
+
+// Usage in your widget
+class EmojiPickerWidget extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final catalogAsync = ref.watch(emojiCatalogNotifierProvider);
+    
+    return catalogAsync.when(
+      data: (catalog) {
+        final emoji = catalog.get(':custom_emoji:');
+        return emoji != null ? Text('Found: ${emoji.name}') : Text('Not found');
+      },
+      loading: () => CircularProgressIndicator(),
+      error: (error, stack) => Text('Error: $error'),
+    );
+  }
+}
+```
+
+## API Reference
 
 For detailed API documentation, please refer to the documentation on pub.dev.
 
-### License
+## License
 
 This project is published by 司書 (LibraryLibrarian) under the 3-Clause BSD License. For details, please see the [LICENSE](LICENSE) file.
 
-### Related Links
+## Related Links
 
 - [pub.dev Package](https://pub.dev/packages/misskey_emoji)
 - [Misskey Documentation](https://misskey-hub.net/en/)
 
 ---
 
-## Japanese
+# Japanese
 
 Misskey MFM（Markup For Misskey）絵文字のメタデータのキャッシュと解決を行うFlutterライブラリ。永続化ストレージと効率的な取得機能を提供します。
 
-### 内容
+## 概要
 
 - Isarデータベースを使用した絵文字メタデータの永続化キャッシュ（名前、URL、属性など）
 - 効率的な絵文字解決と取得機能
@@ -147,7 +294,7 @@ Misskey MFM（Markup For Misskey）絵文字のメタデータのキャッシュ
 - MFM（Markup For Misskey）絵文字処理の最適化
 - **注意**: 画像データのキャッシュは`cached_network_image`などのライブラリを使用してアプリケーション側で実装してください
 
-### インストール
+## 導入
 
 `pubspec.yaml`ファイルに以下を追加してください：
 
@@ -156,9 +303,9 @@ dependencies:
   misskey_emoji: ^1.0.0
 ```
 
-### クイックスタート
+## 利用方法
 
-#### 基本的な使用方法
+### 基本的な使用方法
 
 ```dart
 import 'package:misskey_emoji/misskey_emoji.dart';
@@ -196,7 +343,7 @@ final searchResults = await EmojiSearch.search(
 );
 ```
 
-#### 絵文字リゾルバーの使用
+### 絵文字リゾルバーの使用
 
 ```dart
 // 絵文字解決用のリゾルバーを作成
@@ -211,7 +358,7 @@ if (emojiImage != null) {
 }
 ```
 
-#### 画像キャッシュ付きの絵文字表示
+### 画像キャッシュ付きの絵文字表示
 
 ```dart
 // 画像キャッシュ付きで絵文字を表示する場合は、アプリケーション側で実装
@@ -234,7 +381,7 @@ Widget buildEmoji(String shortcode) {
 }
 ```
 
-#### インメモリカタログ（一時的な使用）
+### インメモリカタログ（一時的な使用）
 
 ```dart
 // 永続化ストレージが不要な場合
@@ -247,15 +394,162 @@ await inMemoryCatalog.sync();
 final emoji = await inMemoryCatalog.get(':example:');
 ```
 
-### APIリファレンス
+## リソース管理
+
+カタログやストアの利用後は、`dispose()`を呼び出してリソースを解放するようにしてください
+
+### 基本的なクリーンアップ
+
+```dart
+final isar = await openEmojiIsarForServer(
+  Uri.parse('https://misskey.io'),
+  directory: '/path/to/isar',
+);
+final store = IsarEmojiStore(isar);
+final catalog = PersistentEmojiCatalog(api: emojiApi, store: store);
+
+try {
+  await catalog.sync();
+  final emoji = catalog.get(':custom_emoji:');
+} finally {
+  await catalog.dispose(); // store.dispose() が内部で呼ばれる
+  await isar.close(); // 所有している場合は明示的にクローズ
+}
+```
+
+### エラーハンドリング
+
+```dart
+final catalog = PersistentEmojiCatalog(
+  api: emojiApi,
+  store: store,
+  onSyncError: (error, stackTrace) {
+    // デバッグや監視のためのエラーログ
+    print('絵文字同期失敗: $error');
+    // エラー追跡サービスに送信することも可能
+  },
+);
+```
+
+### Riverpodとの統合
+
+#### 単一プロバイダーでIsarを所有
+
+```dart
+@riverpod
+class EmojiCatalogNotifier extends _$EmojiCatalogNotifier {
+  @override
+  FutureOr<PersistentEmojiCatalog> build() async {
+    // APIクライアントを作成
+    final httpClient = MisskeyHttpClient(
+      config: MisskeyApiConfig(baseUrl: Uri.parse('https://misskey.io')),
+    );
+    final emojiApi = MisskeyEmojiApi(httpClient);
+    
+    // 所有権を持つIsarインスタンスでストアを作成
+    final appDir = await getApplicationDocumentsDirectory();
+    final isar = await openEmojiIsarForServer(
+      Uri.parse('https://misskey.io'),
+      directory: appDir.path,
+    );
+    final store = IsarEmojiStore(isar, ownsIsar: true);
+    final catalog = PersistentEmojiCatalog(
+      api: emojiApi,
+      store: store,
+      onSyncError: (error, stackTrace) {
+        debugPrint('絵文字同期失敗: $error');
+      },
+    );
+
+    // プロバイダーがdisposeされた時にリソースを解放
+    ref.onDispose(() async {
+      await catalog.dispose(); // ownsIsarがtrueならIsarもクローズされる
+    });
+
+    await catalog.sync();
+    return catalog;
+  }
+}
+```
+
+#### Isarインスタンスを共有してリソース管理を改善（基本的にこちらを推奨）
+
+```dart
+// 共有Isarインスタンスプロバイダー（複数のカタログで再利用可能）
+@riverpod
+Future<Isar> emojiIsar(Ref ref) async {
+  final appDir = await getApplicationDocumentsDirectory();
+  final isar = await openEmojiIsarForServer(
+    Uri.parse('https://misskey.io'),
+    directory: appDir.path,
+  );
+  
+  // アプリ終了時にIsarをクローズ
+  ref.onDispose(() async {
+    await isar.close();
+  });
+  
+  return isar;
+}
+
+// 共有Isarを使用する絵文字カタログプロバイダー
+@riverpod
+class EmojiCatalogNotifier extends _$EmojiCatalogNotifier {
+  @override
+  FutureOr<PersistentEmojiCatalog> build() async {
+    final httpClient = MisskeyHttpClient(
+      config: MisskeyApiConfig(baseUrl: Uri.parse('https://misskey.io')),
+    );
+    final emojiApi = MisskeyEmojiApi(httpClient);
+    
+    // 共有Isarインスタンスを使用（ownsIsar: falseがデフォルト）
+    final isar = await ref.watch(emojiIsarProvider.future);
+    final store = IsarEmojiStore(isar); // IsarのライフサイクルはemojiIsarProviderが管理
+    final catalog = PersistentEmojiCatalog(
+      api: emojiApi,
+      store: store,
+      onSyncError: (error, stackTrace) {
+        // エラー追跡サービスに送信（例: Sentry、Firebase Crashlytics）
+        debugPrint('絵文字同期失敗: $error');
+      },
+    );
+
+    ref.onDispose(() async {
+      await catalog.dispose(); // カタログのみをdispose、Isarは開いたまま
+    });
+
+    await catalog.sync();
+    return catalog;
+  }
+}
+
+// ウィジェットでの使用例
+class EmojiPickerWidget extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final catalogAsync = ref.watch(emojiCatalogNotifierProvider);
+    
+    return catalogAsync.when(
+      data: (catalog) {
+        final emoji = catalog.get(':custom_emoji:');
+        return emoji != null ? Text('見つかりました: ${emoji.name}') : Text('見つかりません');
+      },
+      loading: () => CircularProgressIndicator(),
+      error: (error, stack) => Text('エラー: $error'),
+    );
+  }
+}
+```
+
+## APIリファレンス
 
 詳細なAPIドキュメントについては、pub.devのドキュメントを参照してください。
 
-### ライセンス
+## ライセンス
 
 このプロジェクトは司書(LibraryLibrarian)によって、3-Clause BSD Licenseの下で公開されています。詳細は[LICENSE](LICENSE)ファイルをご覧ください。
 
-### リンク
+## リンク
 
 - [pub.dev パッケージ](https://pub.dev/packages/misskey_emoji)
 - [Misskey ドキュメント](https://misskey-hub.net/ja/)

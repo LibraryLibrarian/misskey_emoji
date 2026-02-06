@@ -35,10 +35,15 @@ class MisskeyEmojiResolver {
   /// 参照・同期に用いるカタログ
   final EmojiCatalog catalog;
 
+  bool _disposed = false;
+
   /// ショートコードを[EmojiImage]に解決する
   ///
   /// キャッシュミス時には1度だけ同期してから再試行する
   Future<EmojiImage?> resolve(String code) async {
+    if (_disposed) {
+      throw StateError('Cannot resolve using a disposed MisskeyEmojiResolver');
+    }
     final rec = catalog.get(code) ?? (await _syncAndRetry(code));
     if (rec == null) return null;
     return EmojiImage(
@@ -50,6 +55,14 @@ class MisskeyEmojiResolver {
 
   /// 関数オブジェクトとして呼び出せるようにする
   Future<EmojiImage?> call(String code) => resolve(code);
+
+  /// リゾルバーが使用するリソースをクリーンアップする
+  ///
+  /// 注意: このメソッドはカタログ自体のdisposeは呼び出さない
+  /// カタログのライフサイクルは呼び出し側が管理する必要がある
+  Future<void> dispose() async {
+    _disposed = true;
+  }
 
   Future<EmojiRecord?> _syncAndRetry(String code) async {
     await catalog.sync();

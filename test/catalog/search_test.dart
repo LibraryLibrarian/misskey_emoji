@@ -40,6 +40,9 @@ class MockSearchCatalog implements EmojiCatalog {
 
   @override
   Future<void> sync({bool force = false}) async {}
+
+  @override
+  Future<void> dispose() async {}
 }
 
 void main() {

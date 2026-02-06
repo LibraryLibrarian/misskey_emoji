@@ -132,7 +132,9 @@ void main() {
     });
 
     tearDown(() async {
-      await isar.close(deleteFromDisk: true);
+      if (isar.isOpen) {
+        await isar.close(deleteFromDisk: true);
+      }
     });
 
     test('初期状態では空のリストを返す', () async {
@@ -326,6 +328,37 @@ void main() {
       expect(loaded, hasLength(1));
       // growable: false のリストなので追加できない
       expect(() => loaded.add(record), throwsUnsupportedError);
+    });
+
+    test('disposeでownsIsar=falseの場合はIsarを閉じない', () async {
+      await store.dispose();
+      expect(isar.isOpen, isTrue);
+
+      // 2回目のdisposeも安全に呼べる
+      await store.dispose();
+      expect(isar.isOpen, isTrue);
+    });
+
+    test('disposeでownsIsar=trueの場合はIsarを閉じる', () async {
+      final ownedStore = IsarEmojiStore(isar, ownsIsar: true);
+      await ownedStore.dispose();
+      expect(isar.isOpen, isFalse);
+
+      // 2回目のdisposeも安全に呼べる
+      await ownedStore.dispose();
+    });
+
+    test('dispose後の操作はStateErrorを投げる', () async {
+      await store.dispose();
+
+      expect(
+        () => store.loadAll(),
+        throwsA(isA<StateError>()),
+      );
+      expect(
+        () => store.saveAll([]),
+        throwsA(isA<StateError>()),
+      );
     });
   });
 }

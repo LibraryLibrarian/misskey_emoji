@@ -15,10 +15,13 @@ class PersistentEmojiCatalog extends EmojiCatalogBase {
     super.meta,
     super.ttl,
     super.errorCooldown,
+    super.onSyncError,
   });
 
   /// 絵文字キャッシュを保持する永続ストア
   final EmojiStore store;
+
+  bool _storeDisposed = false;
 
   /// 初回呼び出しでは[store]からのロードを試みる
   @override
@@ -35,5 +38,14 @@ class PersistentEmojiCatalog extends EmojiCatalogBase {
   @override
   Future<void> afterFetch(List<EmojiRecord> records) async {
     await store.saveAll(records);
+  }
+
+  @override
+  Future<void> dispose() async {
+    await super.dispose();
+    if (!_storeDisposed) {
+      _storeDisposed = true;
+      await store.dispose();
+    }
   }
 }

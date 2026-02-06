@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:misskey_api_core/misskey_api_core.dart';
 import 'package:misskey_emoji/src/api/misskey_emoji_api.dart';
@@ -41,6 +43,36 @@ class MockMisskeyHttpClient extends MisskeyHttpClient {
   }
 }
 
+/// 遅延レスポンス用のモックHTTPクライアント
+class DelayedMisskeyHttpClient extends MisskeyHttpClient {
+  DelayedMisskeyHttpClient({
+    required this.mockResponse,
+    required this.completer,
+  }) : super(
+         config: MisskeyApiConfig(baseUrl: Uri.parse('https://test.example')),
+       );
+
+  final Map<String, dynamic> mockResponse;
+  final Completer<void> completer;
+
+  @override
+  Future<T> send<T>(
+    String path, {
+    String method = 'POST',
+    dynamic body,
+    RequestOptions options = const RequestOptions(),
+    Object? cancelToken,
+    void Function(int, int)? onSendProgress,
+  }) async {
+    if (path == '/emojis') {
+      await completer.future;
+      return mockResponse as T;
+    }
+
+    throw UnimplementedError('Mock not implemented for $path');
+  }
+}
+
 /// テスト用のモックMetaClient
 class MockMetaClient extends MetaClient {
   MockMetaClient({
@@ -74,6 +106,7 @@ class MockEmojiStore implements EmojiStore {
   List<EmojiRecord> savedRecords = [];
   int loadCallCount = 0;
   int saveCallCount = 0;
+  int disposeCallCount = 0;
 
   @override
   Future<List<EmojiRecord>> loadAll() async {
@@ -86,6 +119,11 @@ class MockEmojiStore implements EmojiStore {
     saveCallCount++;
     savedRecords = List<EmojiRecord>.from(all);
     initialRecords = savedRecords;
+  }
+
+  @override
+  Future<void> dispose() async {
+    disposeCallCount++;
   }
 }
 
@@ -502,6 +540,111 @@ void main() {
       final result = testCatalog.get('test_emoji');
       expect(result, isNotNull);
       expect(result!.name, equals('test_emoji'));
+    });
+
+    test('disposeでストアのdisposeが呼ばれる', () async {
+      await catalog.dispose();
+      expect(store.disposeCallCount, equals(1));
+
+      // 2回目のdisposeでもストアのdisposeは1回だけ
+      await catalog.dispose();
+      expect(store.disposeCallCount, equals(1));
+    });
+
+    test('dispose後のsyncはStateErrorを投げる', () async {
+      await catalog.dispose();
+      expect(() => catalog.sync(), throwsA(isA<StateError>()));
+    });
+
+    test('dispose後のgetは動作する（既存キャッシュへのアクセス）', () async {
+      // 先に同期してキャッシュを作成
+      await catalog.sync();
+      final beforeDispose = catalog.get(':test_emoji:');
+      expect(beforeDispose, isNotNull);
+
+      // disposeしてもgetは動作する（メモリ上のキャッシュにアクセスするだけ）
+      await catalog.dispose();
+      final afterDispose = catalog.get(':test_emoji:');
+      expect(afterDispose, isNotNull);
+      expect(afterDispose!.name, equals(beforeDispose!.name));
+    });
+
+    test('disposeは進行中のsyncを待機する', () async {
+      final completer = Completer<void>();
+      final httpClient = DelayedMisskeyHttpClient(
+        mockResponse: {'emojis': <Map<String, dynamic>>[]},
+        completer: completer,
+      );
+      final testApi = MisskeyEmojiApi(httpClient);
+      final testStore = MockEmojiStore();
+      final testCatalog = PersistentEmojiCatalog(
+        api: testApi,
+        store: testStore,
+      );
+
+      final syncFuture = testCatalog.sync(force: true);
+      final disposeFuture = testCatalog.dispose();
+
+      final completedEarly = await Future.any<bool>([
+        disposeFuture.then((_) => true),
+        Future<void>.delayed(
+          const Duration(milliseconds: 10),
+        ).then((_) => false),
+      ]);
+      expect(completedEarly, isFalse);
+
+      completer.complete();
+      await syncFuture;
+      await disposeFuture;
+    });
+
+    test('onSyncErrorコールバックがエラー時に呼ばれる', () async {
+      final errorHttpClient = MockMisskeyHttpClient(
+        mockResponse: {},
+        shouldThrow: true,
+      );
+      final errorApi = MisskeyEmojiApi(errorHttpClient);
+      final errorStore = MockEmojiStore();
+
+      Exception? capturedError;
+      StackTrace? capturedStackTrace;
+
+      final errorCatalog = PersistentEmojiCatalog(
+        api: errorApi,
+        store: errorStore,
+        onSyncError: (error, stackTrace) {
+          capturedError = error;
+          capturedStackTrace = stackTrace;
+        },
+      );
+
+      // 初回同期でエラーが発生
+      await errorCatalog.sync(force: true);
+
+      expect(capturedError, isNotNull);
+      expect(capturedStackTrace, isNotNull);
+      expect(capturedError.toString(), contains('Network error'));
+    });
+
+    test('onSyncErrorがnullでもエラーで落ちない', () async {
+      final errorHttpClient = MockMisskeyHttpClient(
+        mockResponse: {},
+        shouldThrow: true,
+      );
+      final errorApi = MisskeyEmojiApi(errorHttpClient);
+      final errorStore = MockEmojiStore();
+
+      final errorCatalog = PersistentEmojiCatalog(
+        api: errorApi,
+        store: errorStore,
+        // onSyncError未指定
+      );
+
+      // エラーが発生してもクラッシュしない
+      await errorCatalog.sync(force: true);
+
+      // キャッシュは空のまま
+      expect(errorCatalog.snapshot(), isEmpty);
     });
   });
 }

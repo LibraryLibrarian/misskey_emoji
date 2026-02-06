@@ -50,22 +50,52 @@ EmojiRecord fromEntity(EmojiRecordEntity e) {
 
 /// [EmojiStore]のIsar実装
 class IsarEmojiStore implements EmojiStore {
-  IsarEmojiStore(this.isar);
+  IsarEmojiStore(this.isar, {this.ownsIsar = false});
 
   /// オープン済みのIsarインスタンス
   final Isar isar;
 
+  /// このストアがIsarインスタンスの所有権を持つかどうか
+  ///
+  /// trueの場合、disposeメソッドでIsarインスタンスもクローズする
+  /// falseの場合（デフォルト）、Isarインスタンスのクローズは呼び出し側の責任
+  final bool ownsIsar;
+
+  bool _disposed = false;
+
   @override
   Future<List<EmojiRecord>> loadAll() async {
+    _checkNotDisposed();
     final list = await isar.emojiRecordEntitys.where().findAll();
     return list.map(fromEntity).toList(growable: false);
   }
 
   @override
   Future<void> saveAll(List<EmojiRecord> all) async {
+    _checkNotDisposed();
     await isar.writeTxn(() async {
       await isar.emojiRecordEntitys.clear();
       await isar.emojiRecordEntitys.putAll(all.map(toEntity).toList());
     });
+  }
+
+  /// dispose済みまたはIsar閉じている場合にエラーを投げる
+  void _checkNotDisposed() {
+    if (_disposed) {
+      throw StateError('Cannot use a disposed IsarEmojiStore');
+    }
+    if (!isar.isOpen) {
+      throw StateError('Cannot use IsarEmojiStore with a closed Isar instance');
+    }
+  }
+
+  @override
+  Future<void> dispose() async {
+    if (_disposed) return;
+    _disposed = true;
+
+    if (ownsIsar) {
+      await isar.close();
+    }
   }
 }

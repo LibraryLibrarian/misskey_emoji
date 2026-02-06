@@ -7,4 +7,10 @@ abstract class EmojiStore {
 
   /// 渡された一覧で既存の絵文字レコードをすべて置き換える
   Future<void> saveAll(List<EmojiRecord> all);
+
+  /// ストアが使用するリソースをクリーンアップ
+  ///
+  /// ストアが不要になった時に呼び出す
+  /// 実装クラスによっては、データベース接続のクリーンアップなどを行う
+  Future<void> dispose();
 }
