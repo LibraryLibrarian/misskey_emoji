@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/utils/file_size_formatter.dart';
 import '../models/server_entry.dart';
 import '../services/server_manager.dart';
 
@@ -26,6 +27,7 @@ class ServerDetailPage extends StatefulWidget {
 
 class _ServerDetailPageState extends State<ServerDetailPage> {
   int _emojiCount = 0;
+  int _dbSize = 0;
   bool _loadingCount = true;
   bool _testing = false;
   String? _testResult;
@@ -44,9 +46,11 @@ class _ServerDetailPageState extends State<ServerDetailPage> {
     setState(() => _loadingCount = true);
     try {
       final count = await _manager.getEmojiCountFor(_serverKey);
+      final size = await _manager.getDatabaseSizeFor(_serverKey);
       if (mounted) {
         setState(() {
           _emojiCount = count;
+          _dbSize = size;
           _loadingCount = false;
         });
       }
@@ -99,6 +103,8 @@ class _ServerDetailPageState extends State<ServerDetailPage> {
     if (confirmed != true) return;
 
     await _manager.clearCacheFor(_serverKey);
+    // ファイルシステムの更新を待つ
+    await Future.delayed(const Duration(milliseconds: 500));
     await _loadEmojiCount();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -291,6 +297,38 @@ class _ServerDetailPageState extends State<ServerDetailPage> {
                   '$_emojiCount 個',
                   style: textTheme.bodyLarge?.copyWith(
                     fontWeight: FontWeight.w600,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Icon(
+                Icons.storage_outlined,
+                size: 20,
+                color: colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'キャッシュ容量',
+                style: textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const Spacer(),
+              if (_loadingCount)
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else
+                Text(
+                  _dbSize < 0 ? '取得失敗' : formatFileSize(_dbSize),
+                  style: textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: _dbSize < 0 ? colorScheme.error : null,
                   ),
                 ),
             ],

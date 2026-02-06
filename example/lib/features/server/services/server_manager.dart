@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:isar_community/isar.dart';
 import 'package:misskey_api_core/misskey_api_core.dart';
 import 'package:misskey_emoji/misskey_emoji.dart';
 import 'package:path_provider/path_provider.dart';
@@ -212,6 +213,34 @@ class ServerManager extends ChangeNotifier {
       return newCtx.isar.emojiRecordEntitys.count();
     }
     return ctx.isar.emojiRecordEntitys.count();
+  }
+
+  /// 指定キーのサーバーのデータベース使用サイズを取得（バイト数）
+  ///
+  /// Isarの`getSize()`メソッドを使用して、実際に使用されているデータサイズを取得
+  /// 取得失敗時は-1を返す
+  Future<int> getDatabaseSizeFor(String key) async {
+    try {
+      final ctx = _contexts[key];
+      if (ctx == null) {
+        // コンテキストが未初期化の場合、対応するサーバーを初期化
+        final entry = _servers.cast<ServerEntry?>().firstWhere(
+              (e) => e?.key == key,
+              orElse: () => null,
+            );
+        if (entry == null) return -1;
+        
+        await _ensureContextFor(entry);
+        final newCtx = _contexts[key];
+        if (newCtx == null) return -1;
+
+        return await newCtx.isar.emojiRecordEntitys.getSize();
+      }
+
+      return await ctx.isar.emojiRecordEntitys.getSize();
+    } catch (e) {
+      return -1;
+    }
   }
 
   /// 指定URLのサーバーが既に追加済みか判定する
