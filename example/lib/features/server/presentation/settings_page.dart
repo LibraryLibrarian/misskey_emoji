@@ -239,8 +239,7 @@ class _ServerListTile extends StatelessWidget {
       ),
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         leading: CircleAvatar(
           backgroundColor:
               isActive ? colorScheme.primaryContainer : colorScheme.surface,
