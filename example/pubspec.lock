@@ -345,10 +345,10 @@ packages:
     dependency: "direct main"
     description:
       name: misskey_client
-      sha256: df6f09b2ecbdc9f0a7ccb9f21d6674384e290c72ebf5bedd3f35c793f7671d3c
+      sha256: "469db5c2add672789c84fd41347ca94329260aff495a98e8003f201d08382177"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.0-beta.4"
+    version: "1.0.0-beta.5"
   misskey_emoji:
     dependency: "direct main"
     description:
