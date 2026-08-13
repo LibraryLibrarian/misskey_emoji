@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:misskey_api_core/misskey_api_core.dart';
+import 'package:misskey_client/misskey_client.dart';
 import 'package:misskey_emoji/misskey_emoji.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -152,7 +152,7 @@ class ServerManager extends ChangeNotifier {
     _status = '接続テスト中...';
     notifyListeners();
     try {
-      await MetaClient(ctx.http).getMeta(refresh: true);
+      await ctx.client.meta.getMeta(refresh: true);
       _status = '接続OK';
       notifyListeners();
       return true;
@@ -260,21 +260,21 @@ class ServerManager extends ChangeNotifier {
     final dir = await getApplicationDocumentsDirectory();
     final isar =
         await openEmojiIsarForServer(Uri.parse(entry.url), directory: dir.path);
-    final http = MisskeyHttpClient(
-        config: MisskeyApiConfig(baseUrl: Uri.parse(entry.url)));
-    final api = MisskeyEmojiApi(http);
+    final client = MisskeyClient(
+      config: MisskeyClientConfig(baseUrl: Uri.parse(entry.url)),
+    );
+    final source = MisskeyClientEmojiSource(client);
     final store = IsarEmojiStore(isar);
     final catalog = PersistentEmojiCatalog(
-      api: api,
+      source: source,
       store: store,
-      meta: MetaClient(http),
       ttl: const Duration(minutes: 30),
     );
     final resolver = MisskeyEmojiResolver(catalog);
     _contexts[key] = ServerContext(
       isar: isar,
-      http: http,
-      api: api,
+      client: client,
+      source: source,
       store: store,
       catalog: catalog,
       resolver: resolver,

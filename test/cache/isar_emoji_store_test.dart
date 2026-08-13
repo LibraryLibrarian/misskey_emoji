@@ -14,7 +14,6 @@ void main() {
         localOnly: true,
         isSensitive: false,
         allowRoleIds: ['role1', 'role2'],
-        denyRoleIds: ['role3'],
       );
 
       final entity = toEntity(record);
@@ -26,7 +25,6 @@ void main() {
       expect(entity.localOnly, isTrue);
       expect(entity.isSensitive, isFalse);
       expect(entity.allowRoleIds, equals(['role1', 'role2']));
-      expect(entity.denyRoleIds, equals(['role3']));
     });
 
     test('EmojiRecordEntityからEmojiRecordへの変換', () {
@@ -37,8 +35,7 @@ void main() {
         ..category = 'test_category'
         ..localOnly = true
         ..isSensitive = false
-        ..allowRoleIds = ['role1', 'role2']
-        ..denyRoleIds = ['role3'];
+        ..allowRoleIds = ['role1', 'role2'];
 
       final record = fromEntity(entity);
 
@@ -49,7 +46,6 @@ void main() {
       expect(record.localOnly, isTrue);
       expect(record.isSensitive, isFalse);
       expect(record.allowRoleIds, equals(['role1', 'role2']));
-      expect(record.denyRoleIds, equals(['role3']));
     });
 
     test('カテゴリなしのレコード変換', () {
@@ -60,7 +56,6 @@ void main() {
         localOnly: false,
         isSensitive: false,
         allowRoleIds: [],
-        denyRoleIds: [],
       );
 
       final entity = toEntity(record);
@@ -78,7 +73,6 @@ void main() {
         localOnly: true,
         isSensitive: true,
         allowRoleIds: ['role1'],
-        denyRoleIds: ['role2'],
       );
 
       final entity = toEntity(original);
@@ -91,7 +85,6 @@ void main() {
       expect(converted.localOnly, equals(original.localOnly));
       expect(converted.isSensitive, equals(original.isSensitive));
       expect(converted.allowRoleIds, equals(original.allowRoleIds));
-      expect(converted.denyRoleIds, equals(original.denyRoleIds));
     });
 
     test('リストが独立してコピーされる', () {
@@ -103,7 +96,6 @@ void main() {
         localOnly: false,
         isSensitive: false,
         allowRoleIds: [],
-        denyRoleIds: [],
       );
 
       final entity = toEntity(record);
@@ -151,7 +143,6 @@ void main() {
         localOnly: false,
         isSensitive: false,
         allowRoleIds: [],
-        denyRoleIds: [],
       );
 
       await store.saveAll([record]);
@@ -170,7 +161,6 @@ void main() {
           localOnly: false,
           isSensitive: false,
           allowRoleIds: [],
-          denyRoleIds: [],
         ),
         EmojiRecord(
           name: 'emoji2',
@@ -179,7 +169,6 @@ void main() {
           localOnly: false,
           isSensitive: false,
           allowRoleIds: [],
-          denyRoleIds: [],
         ),
       ];
 
@@ -199,7 +188,6 @@ void main() {
           localOnly: false,
           isSensitive: false,
           allowRoleIds: [],
-          denyRoleIds: [],
         ),
       ];
 
@@ -211,7 +199,6 @@ void main() {
           localOnly: false,
           isSensitive: false,
           allowRoleIds: [],
-          denyRoleIds: [],
         ),
       ];
 
@@ -231,7 +218,6 @@ void main() {
         localOnly: false,
         isSensitive: false,
         allowRoleIds: [],
-        denyRoleIds: [],
       );
 
       await store.saveAll([record]);
@@ -252,7 +238,6 @@ void main() {
           localOnly: i.isEven,
           isSensitive: i % 3 == 0,
           allowRoleIds: ['role_$i'],
-          denyRoleIds: [],
         ),
       );
 
@@ -271,7 +256,6 @@ void main() {
         localOnly: false,
         isSensitive: false,
         allowRoleIds: [],
-        denyRoleIds: [],
       );
 
       await store.saveAll([record]);
@@ -292,7 +276,6 @@ void main() {
         localOnly: true,
         isSensitive: true,
         allowRoleIds: ['role1', 'role2', 'role3'],
-        denyRoleIds: ['role4', 'role5'],
       );
 
       await store.saveAll([record]);
@@ -308,7 +291,6 @@ void main() {
       expect(loadedRecord.localOnly, equals(record.localOnly));
       expect(loadedRecord.isSensitive, equals(record.isSensitive));
       expect(loadedRecord.allowRoleIds, equals(record.allowRoleIds));
-      expect(loadedRecord.denyRoleIds, equals(record.denyRoleIds));
     });
 
     test('growableがfalseで読み込まれる', () async {
@@ -319,7 +301,6 @@ void main() {
         localOnly: false,
         isSensitive: false,
         allowRoleIds: [],
-        denyRoleIds: [],
       );
 
       await store.saveAll([record]);

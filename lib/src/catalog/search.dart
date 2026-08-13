@@ -197,7 +197,6 @@ class EmojiSearch {
       localOnly: false,
       isSensitive: false,
       allowRoleIds: const [],
-      denyRoleIds: const [],
     );
     return scorer(dummy, q);
   }

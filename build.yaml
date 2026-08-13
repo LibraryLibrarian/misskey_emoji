@@ -8,8 +8,4 @@ targets:
       isar_community_generator:isar_community_generator:
         generate_for:
           - lib/**
-      json_serializable:json_serializable:
-        generate_for:
-          - lib/**
-
 

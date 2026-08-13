@@ -65,7 +65,6 @@ void main() {
         localOnly: false,
         isSensitive: false,
         allowRoleIds: [],
-        denyRoleIds: [],
       );
 
       final catalog = MockEmojiCatalog(
@@ -98,7 +97,6 @@ void main() {
         localOnly: false,
         isSensitive: false,
         allowRoleIds: [],
-        denyRoleIds: [],
       );
 
       // normalizeShortcode(':test_emoji:') は 'test_emoji' になる
@@ -121,7 +119,6 @@ void main() {
         localOnly: false,
         isSensitive: false,
         allowRoleIds: [],
-        denyRoleIds: [],
       );
 
       final catalog = MockEmojiCatalog(
@@ -143,7 +140,6 @@ void main() {
         localOnly: false,
         isSensitive: true,
         allowRoleIds: [],
-        denyRoleIds: [],
       );
 
       final catalog = MockEmojiCatalog(
@@ -165,7 +161,6 @@ void main() {
         localOnly: false,
         isSensitive: false,
         allowRoleIds: [],
-        denyRoleIds: [],
       );
 
       // mockRecordsを変更可能な状態で作成
@@ -195,7 +190,6 @@ void main() {
         localOnly: false,
         isSensitive: false,
         allowRoleIds: [],
-        denyRoleIds: [],
       );
 
       final catalog = MockEmojiCatalog(
@@ -238,7 +232,6 @@ void main() {
         localOnly: false,
         isSensitive: false,
         allowRoleIds: [],
-        denyRoleIds: [],
       );
 
       final catalog = MockEmojiCatalog(
@@ -263,7 +256,6 @@ void main() {
         localOnly: false,
         isSensitive: false,
         allowRoleIds: [],
-        denyRoleIds: [],
       );
 
       const record2 = EmojiRecord(
@@ -273,7 +265,6 @@ void main() {
         localOnly: false,
         isSensitive: true,
         allowRoleIds: [],
-        denyRoleIds: [],
       );
 
       final catalog = MockEmojiCatalog(

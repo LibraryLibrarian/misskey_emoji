@@ -86,13 +86,6 @@ class EmojiDetailPage extends StatelessWidget {
                     ? const Text('なし')
                     : _buildIdWrap(record.allowRoleIds),
               ),
-              ListTile(
-                leading: const Icon(Icons.block),
-                title: const Text('denyRoleIds'),
-                subtitle: record.denyRoleIds.isEmpty
-                    ? const Text('なし')
-                    : _buildIdWrap(record.denyRoleIds),
-              ),
             ],
           ),
         ],

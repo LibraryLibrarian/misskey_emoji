@@ -29,23 +29,25 @@ dependencies:
 
 ## Quick Start
 
+`EmojiSource` is the catalog's only synchronization boundary. Use `MisskeyClientEmojiSource` for a Misskey server, or implement `EmojiSource.fetchAll()` to provide records from another source or a test double.
+
 ### Basic Usage
 
 ```dart
 import 'package:misskey_emoji/misskey_emoji.dart';
-import 'package:misskey_api_core/misskey_api_core.dart';
+import 'package:misskey_client/misskey_client.dart';
 
-// Create HTTP client for Misskey API
-final httpClient = MisskeyHttpClient(
-  config: MisskeyApiConfig(baseUrl: Uri.parse('https://misskey.io')),
+// Create a typed Misskey client
+final client = MisskeyClient(
+  config: MisskeyClientConfig(baseUrl: Uri.parse('https://misskey.io')),
 );
 
-// Create emoji API client
-final emojiApi = MisskeyEmojiApi(httpClient);
+// Adapt MisskeyClient to the EmojiSource interface
+final emojiSource = MisskeyClientEmojiSource(client);
 
 // Create persistent catalog with Isar storage
 final catalog = PersistentEmojiCatalog(
-  api: emojiApi,
+  source: emojiSource,
   store: IsarEmojiStore(),
 );
 
@@ -71,7 +73,7 @@ final searchResults = await EmojiSearch.search(
 
 ```dart
 // Create resolver for emoji resolution
-final resolver = MisskeyEmojiResolver(catalog: catalog);
+final resolver = MisskeyEmojiResolver(catalog);
 
 // Resolve emoji metadata from shortcode
 final emojiImage = await resolver.resolve(':custom_emoji:');
@@ -110,8 +112,7 @@ Widget buildEmoji(String shortcode) {
 ```dart
 // For cases where persistent storage is not needed
 final inMemoryCatalog = InMemoryEmojiCatalog(
-  api: emojiApi,
-  host: 'misskey.io',
+  source: emojiSource,
 );
 
 await inMemoryCatalog.sync();
@@ -130,7 +131,7 @@ final isar = await openEmojiIsarForServer(
   directory: '/path/to/isar',
 );
 final store = IsarEmojiStore(isar);
-final catalog = PersistentEmojiCatalog(api: emojiApi, store: store);
+final catalog = PersistentEmojiCatalog(source: emojiSource, store: store);
 
 try {
   await catalog.sync();
@@ -145,7 +146,7 @@ try {
 
 ```dart
 final catalog = PersistentEmojiCatalog(
-  api: emojiApi,
+  source: emojiSource,
   store: store,
   onSyncError: (error, stackTrace) {
     // Log errors for debugging or monitoring
@@ -164,11 +165,11 @@ final catalog = PersistentEmojiCatalog(
 class EmojiCatalogNotifier extends _$EmojiCatalogNotifier {
   @override
   FutureOr<PersistentEmojiCatalog> build() async {
-    // Create API client
-    final httpClient = MisskeyHttpClient(
-      config: MisskeyApiConfig(baseUrl: Uri.parse('https://misskey.io')),
+    // Create a typed Misskey client and emoji source
+    final client = MisskeyClient(
+      config: MisskeyClientConfig(baseUrl: Uri.parse('https://misskey.io')),
     );
-    final emojiApi = MisskeyEmojiApi(httpClient);
+    final emojiSource = MisskeyClientEmojiSource(client);
     
     // Create store with owned Isar instance
     final appDir = await getApplicationDocumentsDirectory();
@@ -178,7 +179,7 @@ class EmojiCatalogNotifier extends _$EmojiCatalogNotifier {
     );
     final store = IsarEmojiStore(isar, ownsIsar: true);
     final catalog = PersistentEmojiCatalog(
-      api: emojiApi,
+      source: emojiSource,
       store: store,
       onSyncError: (error, stackTrace) {
         debugPrint('Emoji sync failed: $error');
@@ -221,16 +222,16 @@ Future<Isar> emojiIsar(Ref ref) async {
 class EmojiCatalogNotifier extends _$EmojiCatalogNotifier {
   @override
   FutureOr<PersistentEmojiCatalog> build() async {
-    final httpClient = MisskeyHttpClient(
-      config: MisskeyApiConfig(baseUrl: Uri.parse('https://misskey.io')),
+    final client = MisskeyClient(
+      config: MisskeyClientConfig(baseUrl: Uri.parse('https://misskey.io')),
     );
-    final emojiApi = MisskeyEmojiApi(httpClient);
+    final emojiSource = MisskeyClientEmojiSource(client);
     
     // Use shared Isar instance (ownsIsar: false is default)
     final isar = await ref.watch(emojiIsarProvider.future);
     final store = IsarEmojiStore(isar); // Isar lifecycle managed by emojiIsarProvider
     final catalog = PersistentEmojiCatalog(
-      api: emojiApi,
+      source: emojiSource,
       store: store,
       onSyncError: (error, stackTrace) {
         // Send to error tracking service (e.g., Sentry, Firebase Crashlytics)
@@ -305,23 +306,25 @@ dependencies:
 
 ## 利用方法
 
+`EmojiSource`がカタログ同期の唯一の境界です。Misskeyサーバーには`MisskeyClientEmojiSource`を使用し、別の取得元やテスト用実装が必要な場合は`EmojiSource.fetchAll()`を実装してください。
+
 ### 基本的な使用方法
 
 ```dart
 import 'package:misskey_emoji/misskey_emoji.dart';
-import 'package:misskey_api_core/misskey_api_core.dart';
+import 'package:misskey_client/misskey_client.dart';
 
-// Misskey API用のHTTPクライアントを作成
-final httpClient = MisskeyHttpClient(
-  config: MisskeyApiConfig(baseUrl: Uri.parse('https://misskey.io')),
+// 型付きMisskeyクライアントを作成
+final client = MisskeyClient(
+  config: MisskeyClientConfig(baseUrl: Uri.parse('https://misskey.io')),
 );
 
-// 絵文字APIクライアントを作成
-final emojiApi = MisskeyEmojiApi(httpClient);
+// MisskeyClientをEmojiSourceインターフェースへ接続
+final emojiSource = MisskeyClientEmojiSource(client);
 
 // Isarストレージを使用した永続化カタログを作成
 final catalog = PersistentEmojiCatalog(
-  api: emojiApi,
+  source: emojiSource,
   store: IsarEmojiStore(),
 );
 
@@ -347,7 +350,7 @@ final searchResults = await EmojiSearch.search(
 
 ```dart
 // 絵文字解決用のリゾルバーを作成
-final resolver = MisskeyEmojiResolver(catalog: catalog);
+final resolver = MisskeyEmojiResolver(catalog);
 
 // ショートコードから絵文字メタデータを解決
 final emojiImage = await resolver.resolve(':custom_emoji:');
@@ -386,8 +389,7 @@ Widget buildEmoji(String shortcode) {
 ```dart
 // 永続化ストレージが不要な場合
 final inMemoryCatalog = InMemoryEmojiCatalog(
-  api: emojiApi,
-  host: 'misskey.io',
+  source: emojiSource,
 );
 
 await inMemoryCatalog.sync();
@@ -406,7 +408,7 @@ final isar = await openEmojiIsarForServer(
   directory: '/path/to/isar',
 );
 final store = IsarEmojiStore(isar);
-final catalog = PersistentEmojiCatalog(api: emojiApi, store: store);
+final catalog = PersistentEmojiCatalog(source: emojiSource, store: store);
 
 try {
   await catalog.sync();
@@ -421,7 +423,7 @@ try {
 
 ```dart
 final catalog = PersistentEmojiCatalog(
-  api: emojiApi,
+  source: emojiSource,
   store: store,
   onSyncError: (error, stackTrace) {
     // デバッグや監視のためのエラーログ
@@ -440,11 +442,11 @@ final catalog = PersistentEmojiCatalog(
 class EmojiCatalogNotifier extends _$EmojiCatalogNotifier {
   @override
   FutureOr<PersistentEmojiCatalog> build() async {
-    // APIクライアントを作成
-    final httpClient = MisskeyHttpClient(
-      config: MisskeyApiConfig(baseUrl: Uri.parse('https://misskey.io')),
+    // 型付きMisskeyクライアントと絵文字ソースを作成
+    final client = MisskeyClient(
+      config: MisskeyClientConfig(baseUrl: Uri.parse('https://misskey.io')),
     );
-    final emojiApi = MisskeyEmojiApi(httpClient);
+    final emojiSource = MisskeyClientEmojiSource(client);
     
     // 所有権を持つIsarインスタンスでストアを作成
     final appDir = await getApplicationDocumentsDirectory();
@@ -454,7 +456,7 @@ class EmojiCatalogNotifier extends _$EmojiCatalogNotifier {
     );
     final store = IsarEmojiStore(isar, ownsIsar: true);
     final catalog = PersistentEmojiCatalog(
-      api: emojiApi,
+      source: emojiSource,
       store: store,
       onSyncError: (error, stackTrace) {
         debugPrint('絵文字同期失敗: $error');
@@ -497,16 +499,16 @@ Future<Isar> emojiIsar(Ref ref) async {
 class EmojiCatalogNotifier extends _$EmojiCatalogNotifier {
   @override
   FutureOr<PersistentEmojiCatalog> build() async {
-    final httpClient = MisskeyHttpClient(
-      config: MisskeyApiConfig(baseUrl: Uri.parse('https://misskey.io')),
+    final client = MisskeyClient(
+      config: MisskeyClientConfig(baseUrl: Uri.parse('https://misskey.io')),
     );
-    final emojiApi = MisskeyEmojiApi(httpClient);
+    final emojiSource = MisskeyClientEmojiSource(client);
     
     // 共有Isarインスタンスを使用（ownsIsar: falseがデフォルト）
     final isar = await ref.watch(emojiIsarProvider.future);
     final store = IsarEmojiStore(isar); // IsarのライフサイクルはemojiIsarProviderが管理
     final catalog = PersistentEmojiCatalog(
-      api: emojiApi,
+      source: emojiSource,
       store: store,
       onSyncError: (error, stackTrace) {
         // エラー追跡サービスに送信（例: Sentry、Firebase Crashlytics）

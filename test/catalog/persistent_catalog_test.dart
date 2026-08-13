@@ -1,108 +1,37 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:misskey_api_core/misskey_api_core.dart';
-import 'package:misskey_emoji/src/api/misskey_emoji_api.dart';
 import 'package:misskey_emoji/src/cache/emoji_store.dart';
 import 'package:misskey_emoji/src/catalog/persistent_catalog.dart';
 import 'package:misskey_emoji/src/models/emoji_record.dart';
 
-/// テスト用のモックHTTPクライアント
-class MockMisskeyHttpClient extends MisskeyHttpClient {
-  MockMisskeyHttpClient({
-    required this.mockResponse,
-    this.shouldThrow = false,
-  }) : super(
-         config: MisskeyApiConfig(baseUrl: Uri.parse('https://test.example')),
-       );
+import '../helpers/fake_emoji_source.dart';
 
-  final Map<String, dynamic> mockResponse;
-  final bool shouldThrow;
-  int callCount = 0;
+const _records = [
+  EmojiRecord(
+    name: 'test_emoji',
+    aliases: ['alias1', 'alias2'],
+    url: 'https://example.com/emoji.png',
+    category: 'test',
+    localOnly: false,
+    isSensitive: false,
+    allowRoleIds: [],
+  ),
+  EmojiRecord(
+    name: 'another_emoji',
+    aliases: [],
+    url: 'https://example.com/another.gif',
+    category: 'test',
+    localOnly: true,
+    isSensitive: true,
+    allowRoleIds: ['role1'],
+  ),
+];
 
-  @override
-  Future<T> send<T>(
-    String path, {
-    String method = 'POST',
-    dynamic body,
-    RequestOptions options = const RequestOptions(),
-    Object? cancelToken,
-    void Function(int, int)? onSendProgress,
-  }) async {
-    callCount++;
+class FakeEmojiStore implements EmojiStore {
+  FakeEmojiStore({this.records = const []});
 
-    if (shouldThrow) {
-      throw Exception('Network error');
-    }
-
-    if (path == '/emojis') {
-      return mockResponse as T;
-    }
-
-    throw UnimplementedError('Mock not implemented for $path');
-  }
-}
-
-/// 遅延レスポンス用のモックHTTPクライアント
-class DelayedMisskeyHttpClient extends MisskeyHttpClient {
-  DelayedMisskeyHttpClient({
-    required this.mockResponse,
-    required this.completer,
-  }) : super(
-         config: MisskeyApiConfig(baseUrl: Uri.parse('https://test.example')),
-       );
-
-  final Map<String, dynamic> mockResponse;
-  final Completer<void> completer;
-
-  @override
-  Future<T> send<T>(
-    String path, {
-    String method = 'POST',
-    dynamic body,
-    RequestOptions options = const RequestOptions(),
-    Object? cancelToken,
-    void Function(int, int)? onSendProgress,
-  }) async {
-    if (path == '/emojis') {
-      await completer.future;
-      return mockResponse as T;
-    }
-
-    throw UnimplementedError('Mock not implemented for $path');
-  }
-}
-
-/// テスト用のモックMetaClient
-class MockMetaClient extends MetaClient {
-  MockMetaClient({
-    required this.mockMeta,
-    this.shouldThrow = false,
-  }) : super(
-         MockMisskeyHttpClient(
-           mockResponse: {},
-           shouldThrow: shouldThrow,
-         ),
-       );
-
-  final Map<String, dynamic> mockMeta;
-  final bool shouldThrow;
-
-  @override
-  Future<Meta> getMeta({bool refresh = false}) async {
-    if (shouldThrow) {
-      throw Exception('Meta fetch error');
-    }
-
-    return Meta.fromJson(mockMeta);
-  }
-}
-
-/// テスト用のモックEmojiStore
-class MockEmojiStore implements EmojiStore {
-  MockEmojiStore({this.initialRecords = const []});
-
-  List<EmojiRecord> initialRecords;
+  List<EmojiRecord> records;
   List<EmojiRecord> savedRecords = [];
   int loadCallCount = 0;
   int saveCallCount = 0;
@@ -111,14 +40,14 @@ class MockEmojiStore implements EmojiStore {
   @override
   Future<List<EmojiRecord>> loadAll() async {
     loadCallCount++;
-    return List<EmojiRecord>.from(initialRecords);
+    return List<EmojiRecord>.from(records);
   }
 
   @override
   Future<void> saveAll(List<EmojiRecord> all) async {
     saveCallCount++;
     savedRecords = List<EmojiRecord>.from(all);
-    initialRecords = savedRecords;
+    records = savedRecords;
   }
 
   @override
@@ -129,462 +58,152 @@ class MockEmojiStore implements EmojiStore {
 
 void main() {
   group('PersistentEmojiCatalog', () {
-    late MisskeyEmojiApi api;
-    late MockEmojiStore store;
+    late FakeEmojiSource source;
+    late FakeEmojiStore store;
     late PersistentEmojiCatalog catalog;
 
     setUp(() {
-      final httpClient = MockMisskeyHttpClient(
-        mockResponse: {
-          'emojis': [
-            {
-              'name': 'test_emoji',
-              'aliases': ['alias1', 'alias2'],
-              'url': 'https://example.com/emoji.png',
-              'category': 'test',
-              'localOnly': false,
-              'isSensitive': false,
-              'roleIdsThatCanBeUsedThisEmojiAsReaction': <String>[],
-              'roleIdsThatCanNotBeUsedThisEmojiAsReaction': <String>[],
-            },
-            {
-              'name': 'another_emoji',
-              'aliases': <String>[],
-              'url': 'https://example.com/another.gif',
-              'category': 'test',
-              'localOnly': true,
-              'isSensitive': true,
-              'roleIdsThatCanBeUsedThisEmojiAsReaction': ['role1'],
-              'roleIdsThatCanNotBeUsedThisEmojiAsReaction': ['role2'],
-            },
-          ],
-        },
-      );
-      api = MisskeyEmojiApi(httpClient);
-      store = MockEmojiStore();
-      catalog = PersistentEmojiCatalog(api: api, store: store);
+      source = FakeEmojiSource(records: _records);
+      store = FakeEmojiStore();
+      catalog = PersistentEmojiCatalog(source: source, store: store);
     });
 
     test('初期状態では絵文字が空', () {
-      final result = catalog.get('test_emoji');
-      expect(result, isNull);
+      expect(catalog.get('test_emoji'), isNull);
     });
 
-    test('syncでストアから絵文字をロードする', () async {
-      const cachedRecord = EmojiRecord(
+    test('syncでストアをロードして最新データを保存する', () async {
+      await catalog.sync(force: true);
+
+      expect(store.loadCallCount, equals(1));
+      expect(store.saveCallCount, equals(1));
+      expect(store.savedRecords, equals(_records));
+      expect(catalog.get('alias1')!.name, equals('test_emoji'));
+    });
+
+    test('ストアの既存データは取得成功後に最新データで置換される', () async {
+      const cached = EmojiRecord(
         name: 'cached_emoji',
         aliases: [],
         url: 'https://example.com/cached.png',
         localOnly: false,
         isSensitive: false,
         allowRoleIds: [],
-        denyRoleIds: [],
       );
-
-      final testStore = MockEmojiStore(initialRecords: [cachedRecord]);
+      final cachedStore = FakeEmojiStore(records: [cached]);
       final testCatalog = PersistentEmojiCatalog(
-        api: api,
-        store: testStore,
+        source: source,
+        store: cachedStore,
       );
 
       await testCatalog.sync();
 
-      expect(testStore.loadCallCount, equals(1));
-      final result = testCatalog.get('cached_emoji');
-      // APIからの取得により、test_emojiも取得される
-      expect(result, isNull); // cached_emojiはAPIにないため
-
-      // しかしAPIの絵文字は取得できる
-      final apiResult = testCatalog.get('test_emoji');
-      expect(apiResult, isNotNull);
+      expect(testCatalog.get('cached_emoji'), isNull);
+      expect(testCatalog.get('test_emoji'), isNotNull);
     });
 
-    test('syncで新しい絵文字を取得してストアに保存', () async {
-      await catalog.sync(force: true);
-
-      expect(store.saveCallCount, equals(1));
-      expect(store.savedRecords, hasLength(2));
-      expect(
-        store.savedRecords.map((r) => r.name),
-        containsAll(['test_emoji', 'another_emoji']),
-      );
-    });
-
-    test('エイリアスでも取得できる', () async {
-      await catalog.sync(force: true);
-
-      final result1 = catalog.get('alias1');
-      final result2 = catalog.get('alias2');
-
-      expect(result1, isNotNull);
-      expect(result2, isNotNull);
-      expect(result1!.name, equals('test_emoji'));
-      expect(result2!.name, equals('test_emoji'));
-    });
-
-    test('snapshotで全絵文字を取得できる', () async {
-      await catalog.sync(force: true);
-
-      final snapshot = catalog.snapshot();
-
-      expect(snapshot, isNotEmpty);
-      expect(snapshot['test_emoji'], isNotNull);
-      expect(snapshot['alias1'], isNotNull);
-      expect(snapshot['another_emoji'], isNotNull);
-    });
-
-    test('snapshotは不変マップ', () async {
-      await catalog.sync(force: true);
-
-      final snapshot = catalog.snapshot();
-
-      expect(
-        () => snapshot['new_key'] = const EmojiRecord(
-          name: 'new',
-          aliases: [],
-          url: '',
-          localOnly: false,
-          isSensitive: false,
-          allowRoleIds: [],
-          denyRoleIds: [],
-        ),
-        throwsUnsupportedError,
-      );
-    });
-
-    test('TTL内は再同期しない', () async {
-      final httpClient = MockMisskeyHttpClient(
-        mockResponse: {
-          'emojis': [
-            {
-              'name': 'test',
-              'aliases': <String>[],
-              'url': 'https://example.com/test.png',
-              'category': null,
-              'localOnly': false,
-              'isSensitive': false,
-              'roleIdsThatCanBeUsedThisEmojiAsReaction': <String>[],
-              'roleIdsThatCanNotBeUsedThisEmojiAsReaction': <String>[],
-            },
-          ],
-        },
-      );
-      final testApi = MisskeyEmojiApi(httpClient);
-      final testStore = MockEmojiStore();
+    test('取得エラー時はストアのキャッシュを保持して保存しない', () async {
+      final errorSource = FakeEmojiSource(error: Exception('Network error'));
+      final cachedStore = FakeEmojiStore(records: [_records.first]);
       final testCatalog = PersistentEmojiCatalog(
-        api: testApi,
-        store: testStore,
+        source: errorSource,
+        store: cachedStore,
       );
 
-      await testCatalog.sync();
-      expect(httpClient.callCount, equals(1));
-
-      // TTL内なので再同期されない
-      await testCatalog.sync();
-      expect(httpClient.callCount, equals(1));
-
-      // forceを指定すると再同期される
       await testCatalog.sync(force: true);
-      expect(httpClient.callCount, equals(2));
+
+      expect(testCatalog.get('test_emoji'), isNotNull);
+      expect(cachedStore.saveCallCount, isZero);
+    });
+
+    test('TTL内は再同期せずforceで再同期する', () async {
+      await catalog.sync();
+      await catalog.sync();
+      expect(source.callCount, equals(1));
+
+      await catalog.sync(force: true);
+      expect(source.callCount, equals(2));
     });
 
     test('エラー時にクールダウンが適用される', () async {
-      final httpClient = MockMisskeyHttpClient(
-        mockResponse: {},
-        shouldThrow: true,
-      );
-      final testApi = MisskeyEmojiApi(httpClient);
-      final testStore = MockEmojiStore();
+      final errorSource = FakeEmojiSource(error: Exception('Network error'));
       final testCatalog = PersistentEmojiCatalog(
-        api: testApi,
-        store: testStore,
+        source: errorSource,
+        store: store,
       );
 
-      // エラーが発生する
       await testCatalog.sync(force: true);
-      expect(httpClient.callCount, equals(1));
-
-      // クールダウン期間内は再試行しない
       await testCatalog.sync();
-      expect(httpClient.callCount, equals(1));
-
-      // forceを指定すると再試行する
-      await testCatalog.sync(force: true);
-      expect(httpClient.callCount, equals(2));
-    });
-
-    test('エラー時でも既存のキャッシュは保持される', () async {
-      // まず正常なデータを取得してストアに保存
-      await catalog.sync(force: true);
-
-      final result1 = catalog.get('test_emoji');
-      expect(result1, isNotNull);
-
-      // エラーを起こすクライアントに差し替え
-      final errorClient = MockMisskeyHttpClient(
-        mockResponse: {},
-        shouldThrow: true,
-      );
-      final errorApi = MisskeyEmojiApi(errorClient);
-      final errorCatalog = PersistentEmojiCatalog(api: errorApi, store: store);
-
-      // 先にキャッシュをロード（storeに保存されたデータがある）
-      await errorCatalog.sync();
-
-      // キャッシュから読み込まれている
-      final result2 = errorCatalog.get('test_emoji');
-      expect(result2, isNotNull);
-
-      // エラーを起こす（しかし既存のキャッシュは保持される想定）
-      await errorCatalog.sync(force: true);
-
-      // エラー後もキャッシュは保持されている
-      final result3 = errorCatalog.get('test_emoji');
-      expect(result3, isNotNull);
-    });
-
-    test('metaからの事前充填が動作する', () async {
-      final metaClient = MockMetaClient(
-        mockMeta: {
-          'emojis': [
-            {
-              'name': 'meta_emoji',
-              'aliases': <String>[],
-              'url': 'https://example.com/meta.png',
-              'category': 'meta',
-              'localOnly': false,
-              'isSensitive': false,
-              'roleIdsThatCanBeUsedThisEmojiAsReaction': <String>[],
-              'roleIdsThatCanNotBeUsedThisEmojiAsReaction': <String>[],
-            },
-          ],
-        },
-      );
-
-      final httpClient = MockMisskeyHttpClient(
-        mockResponse: {
-          'emojis': [
-            {
-              'name': 'api_emoji',
-              'aliases': <String>[],
-              'url': 'https://example.com/api.png',
-              'category': 'api',
-              'localOnly': false,
-              'isSensitive': false,
-              'roleIdsThatCanBeUsedThisEmojiAsReaction': <String>[],
-              'roleIdsThatCanNotBeUsedThisEmojiAsReaction': <String>[],
-            },
-          ],
-        },
-      );
-      final testApi = MisskeyEmojiApi(httpClient);
-      final testStore = MockEmojiStore();
-      final testCatalog = PersistentEmojiCatalog(
-        api: testApi,
-        store: testStore,
-        meta: metaClient,
-      );
+      expect(errorSource.callCount, equals(1));
 
       await testCatalog.sync(force: true);
-
-      // API経由の絵文字が取得される（metaは最初の充填のみ）
-      final result = testCatalog.get('api_emoji');
-      expect(result, isNotNull);
-      expect(result!.name, equals('api_emoji'));
+      expect(errorSource.callCount, equals(2));
     });
 
     test('同時に複数のsyncを呼んでも1回だけ実行される', () async {
-      final httpClient = MockMisskeyHttpClient(
-        mockResponse: {
-          'emojis': [
-            {
-              'name': 'test',
-              'aliases': <String>[],
-              'url': 'https://example.com/test.png',
-              'category': null,
-              'localOnly': false,
-              'isSensitive': false,
-              'roleIdsThatCanBeUsedThisEmojiAsReaction': <String>[],
-              'roleIdsThatCanNotBeUsedThisEmojiAsReaction': <String>[],
-            },
-          ],
-        },
-      );
-      final testApi = MisskeyEmojiApi(httpClient);
-      final testStore = MockEmojiStore();
-      final testCatalog = PersistentEmojiCatalog(
-        api: testApi,
-        store: testStore,
-      );
-
-      // 同時に複数のsyncを呼ぶ
       await Future.wait([
-        testCatalog.sync(force: true),
-        testCatalog.sync(force: true),
-        testCatalog.sync(force: true),
+        catalog.sync(force: true),
+        catalog.sync(force: true),
+        catalog.sync(force: true),
       ]);
 
-      // 1回だけ実行される
-      expect(httpClient.callCount, equals(1));
+      expect(source.callCount, equals(1));
+      expect(store.saveCallCount, equals(1));
     });
 
     test('ストアからのロードは初回のみ', () async {
       await catalog.sync();
-      expect(store.loadCallCount, equals(1));
-
-      // 2回目はロードされない
       await catalog.sync(force: true);
+
       expect(store.loadCallCount, equals(1));
     });
 
-    test('同期成功時にストアに保存される', () async {
-      expect(store.saveCallCount, equals(0));
-
+    test('ショートコードを正規化して取得できる', () async {
       await catalog.sync(force: true);
 
-      expect(store.saveCallCount, equals(1));
-      expect(store.savedRecords, isNotEmpty);
-    });
-
-    test('同期失敗時はストアに保存されない', () async {
-      final errorClient = MockMisskeyHttpClient(
-        mockResponse: {},
-        shouldThrow: true,
-      );
-      final errorApi = MisskeyEmojiApi(errorClient);
-      final testStore = MockEmojiStore();
-      final errorCatalog = PersistentEmojiCatalog(
-        api: errorApi,
-        store: testStore,
-      );
-
-      await errorCatalog.sync(force: true);
-
-      // エラー時は保存されない
-      expect(testStore.saveCallCount, equals(0));
-    });
-
-    test('コロンで囲まれたショートコードでも取得できる', () async {
-      await catalog.sync(force: true);
-
-      final result = catalog.get(':test_emoji:');
-      expect(result, isNotNull);
-      expect(result!.name, equals('test_emoji'));
-    });
-
-    test('大文字小文字を区別しない', () async {
-      await catalog.sync(force: true);
-
-      final result = catalog.get('TEST_EMOJI');
-      expect(result, isNotNull);
-      expect(result!.name, equals('test_emoji'));
-    });
-
-    test('存在しないショートコードはnullを返す', () async {
-      await catalog.sync(force: true);
-
-      final result = catalog.get('nonexistent');
-      expect(result, isNull);
+      expect(catalog.get(':TEST_EMOJI:'), isNotNull);
+      expect(catalog.get('nonexistent'), isNull);
     });
 
     test('カスタムTTLが適用される', () async {
-      final httpClient = MockMisskeyHttpClient(
-        mockResponse: {
-          'emojis': <Map<String, dynamic>>[],
-        },
-      );
-      final testApi = MisskeyEmojiApi(httpClient);
-      final testStore = MockEmojiStore();
       final testCatalog = PersistentEmojiCatalog(
-        api: testApi,
-        store: testStore,
+        source: source,
+        store: store,
         ttl: const Duration(milliseconds: 100),
       );
 
       await testCatalog.sync();
-      expect(httpClient.callCount, equals(1));
-
-      // TTL経過前
       await testCatalog.sync();
-      expect(httpClient.callCount, equals(1));
+      expect(source.callCount, equals(1));
 
-      // TTL経過後
       await Future<void>.delayed(const Duration(milliseconds: 150));
       await testCatalog.sync();
-      expect(httpClient.callCount, equals(2));
+      expect(source.callCount, equals(2));
     });
 
-    test('ストアに既存データがある場合、それをロードする', () async {
-      const existingRecord = EmojiRecord(
-        name: 'existing_emoji',
-        aliases: ['existing_alias'],
-        url: 'https://example.com/existing.png',
-        category: 'existing',
-        localOnly: false,
-        isSensitive: false,
-        allowRoleIds: [],
-        denyRoleIds: [],
-      );
-
-      final testStore = MockEmojiStore(initialRecords: [existingRecord]);
-      final testCatalog = PersistentEmojiCatalog(api: api, store: testStore);
-
-      // syncを呼ぶと、まずストアからロードし、その後APIから取得する
-      await testCatalog.sync();
-
-      // ストアからのロードは確認された（loadCallCountが1）
-      expect(testStore.loadCallCount, equals(1));
-
-      // しかし、API呼び出しにより、APIから返された絵文字がストアに保存される
-      // そのため、existing_emojiは失われ、test_emojiが取得できる
-      final result = testCatalog.get('test_emoji');
-      expect(result, isNotNull);
-      expect(result!.name, equals('test_emoji'));
-    });
-
-    test('disposeでストアのdisposeが呼ばれる', () async {
+    test('disposeでストアを1回だけdisposeする', () async {
       await catalog.dispose();
-      expect(store.disposeCallCount, equals(1));
-
-      // 2回目のdisposeでもストアのdisposeは1回だけ
       await catalog.dispose();
+
       expect(store.disposeCallCount, equals(1));
     });
 
     test('dispose後のsyncはStateErrorを投げる', () async {
       await catalog.dispose();
-      expect(() => catalog.sync(), throwsA(isA<StateError>()));
-    });
 
-    test('dispose後のgetは動作する（既存キャッシュへのアクセス）', () async {
-      // 先に同期してキャッシュを作成
-      await catalog.sync();
-      final beforeDispose = catalog.get(':test_emoji:');
-      expect(beforeDispose, isNotNull);
-
-      // disposeしてもgetは動作する（メモリ上のキャッシュにアクセスするだけ）
-      await catalog.dispose();
-      final afterDispose = catalog.get(':test_emoji:');
-      expect(afterDispose, isNotNull);
-      expect(afterDispose!.name, equals(beforeDispose!.name));
+      expect(catalog.sync, throwsA(isA<StateError>()));
     });
 
     test('disposeは進行中のsyncを待機する', () async {
       final completer = Completer<void>();
-      final httpClient = DelayedMisskeyHttpClient(
-        mockResponse: {'emojis': <Map<String, dynamic>>[]},
-        completer: completer,
-      );
-      final testApi = MisskeyEmojiApi(httpClient);
-      final testStore = MockEmojiStore();
+      final delayedSource = FakeEmojiSource(waitFor: completer.future);
       final testCatalog = PersistentEmojiCatalog(
-        api: testApi,
-        store: testStore,
+        source: delayedSource,
+        store: store,
       );
 
       final syncFuture = testCatalog.sync(force: true);
       final disposeFuture = testCatalog.dispose();
-
       final completedEarly = await Future.any<bool>([
         disposeFuture.then((_) => true),
         Future<void>.delayed(
@@ -598,53 +217,22 @@ void main() {
       await disposeFuture;
     });
 
-    test('onSyncErrorコールバックがエラー時に呼ばれる', () async {
-      final errorHttpClient = MockMisskeyHttpClient(
-        mockResponse: {},
-        shouldThrow: true,
-      );
-      final errorApi = MisskeyEmojiApi(errorHttpClient);
-      final errorStore = MockEmojiStore();
-
+    test('onSyncErrorコールバックに例外とスタックトレースを渡す', () async {
       Exception? capturedError;
       StackTrace? capturedStackTrace;
-
       final errorCatalog = PersistentEmojiCatalog(
-        api: errorApi,
-        store: errorStore,
+        source: FakeEmojiSource(error: Exception('Network error')),
+        store: store,
         onSyncError: (error, stackTrace) {
           capturedError = error;
           capturedStackTrace = stackTrace;
         },
       );
 
-      // 初回同期でエラーが発生
       await errorCatalog.sync(force: true);
 
-      expect(capturedError, isNotNull);
-      expect(capturedStackTrace, isNotNull);
       expect(capturedError.toString(), contains('Network error'));
-    });
-
-    test('onSyncErrorがnullでもエラーで落ちない', () async {
-      final errorHttpClient = MockMisskeyHttpClient(
-        mockResponse: {},
-        shouldThrow: true,
-      );
-      final errorApi = MisskeyEmojiApi(errorHttpClient);
-      final errorStore = MockEmojiStore();
-
-      final errorCatalog = PersistentEmojiCatalog(
-        api: errorApi,
-        store: errorStore,
-        // onSyncError未指定
-      );
-
-      // エラーが発生してもクラッシュしない
-      await errorCatalog.sync(force: true);
-
-      // キャッシュは空のまま
-      expect(errorCatalog.snapshot(), isEmpty);
+      expect(capturedStackTrace, isNotNull);
     });
   });
 }
