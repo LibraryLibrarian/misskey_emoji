@@ -17,7 +17,6 @@ class EmojiRecordEntity {
   late bool localOnly;
   late bool isSensitive;
   late List<String> allowRoleIds;
-  late List<String> denyRoleIds;
 }
 
 /// [EmojiRecord]を[EmojiRecordEntity]に変換する処理
@@ -29,8 +28,7 @@ EmojiRecordEntity toEntity(EmojiRecord r) {
     ..url = r.url
     ..localOnly = r.localOnly
     ..isSensitive = r.isSensitive
-    ..allowRoleIds = List<String>.from(r.allowRoleIds)
-    ..denyRoleIds = List<String>.from(r.denyRoleIds);
+    ..allowRoleIds = List<String>.from(r.allowRoleIds);
   return e;
 }
 
@@ -44,7 +42,6 @@ EmojiRecord fromEntity(EmojiRecordEntity e) {
     localOnly: e.localOnly,
     isSensitive: e.isSensitive,
     allowRoleIds: List<String>.from(e.allowRoleIds),
-    denyRoleIds: List<String>.from(e.denyRoleIds),
   );
 }
 

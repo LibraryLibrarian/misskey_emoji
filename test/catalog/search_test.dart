@@ -21,7 +21,6 @@ class MockSearchCatalog implements EmojiCatalog {
         localOnly: false,
         isSensitive: false,
         allowRoleIds: [],
-        denyRoleIds: [],
       ),
     );
   }
@@ -89,7 +88,6 @@ void main() {
         localOnly: false,
         isSensitive: false,
         allowRoleIds: [],
-        denyRoleIds: [],
       );
 
       const result = EmojiSearchResult(
@@ -121,7 +119,6 @@ void main() {
           localOnly: false,
           isSensitive: false,
           allowRoleIds: [],
-          denyRoleIds: [],
         ),
         const EmojiRecord(
           name: 'smirk',
@@ -131,7 +128,6 @@ void main() {
           localOnly: false,
           isSensitive: false,
           allowRoleIds: [],
-          denyRoleIds: [],
         ),
         const EmojiRecord(
           name: 'cat',
@@ -141,7 +137,6 @@ void main() {
           localOnly: false,
           isSensitive: false,
           allowRoleIds: [],
-          denyRoleIds: [],
         ),
         const EmojiRecord(
           name: 'dog',
@@ -151,7 +146,6 @@ void main() {
           localOnly: false,
           isSensitive: false,
           allowRoleIds: [],
-          denyRoleIds: [],
         ),
         const EmojiRecord(
           name: 'sensitive_emoji',
@@ -161,7 +155,6 @@ void main() {
           localOnly: false,
           isSensitive: true,
           allowRoleIds: [],
-          denyRoleIds: [],
         ),
       ];
 

@@ -32,23 +32,18 @@ const EmojiRecordEntitySchema = CollectionSchema(
       name: r'category',
       type: IsarType.string,
     ),
-    r'denyRoleIds': PropertySchema(
-      id: 3,
-      name: r'denyRoleIds',
-      type: IsarType.stringList,
-    ),
     r'isSensitive': PropertySchema(
-      id: 4,
+      id: 3,
       name: r'isSensitive',
       type: IsarType.bool,
     ),
     r'localOnly': PropertySchema(
-      id: 5,
+      id: 4,
       name: r'localOnly',
       type: IsarType.bool,
     ),
-    r'name': PropertySchema(id: 6, name: r'name', type: IsarType.string),
-    r'url': PropertySchema(id: 7, name: r'url', type: IsarType.string),
+    r'name': PropertySchema(id: 5, name: r'name', type: IsarType.string),
+    r'url': PropertySchema(id: 6, name: r'url', type: IsarType.string),
   },
 
   estimateSize: _emojiRecordEntityEstimateSize,
@@ -63,7 +58,7 @@ const EmojiRecordEntitySchema = CollectionSchema(
   getId: _emojiRecordEntityGetId,
   getLinks: _emojiRecordEntityGetLinks,
   attach: _emojiRecordEntityAttach,
-  version: '3.3.0',
+  version: '3.3.2',
 );
 
 int _emojiRecordEntityEstimateSize(
@@ -92,13 +87,6 @@ int _emojiRecordEntityEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
-  bytesCount += 3 + object.denyRoleIds.length * 3;
-  {
-    for (var i = 0; i < object.denyRoleIds.length; i++) {
-      final value = object.denyRoleIds[i];
-      bytesCount += value.length * 3;
-    }
-  }
   bytesCount += 3 + object.name.length * 3;
   bytesCount += 3 + object.url.length * 3;
   return bytesCount;
@@ -113,11 +101,10 @@ void _emojiRecordEntitySerialize(
   writer.writeStringList(offsets[0], object.aliases);
   writer.writeStringList(offsets[1], object.allowRoleIds);
   writer.writeString(offsets[2], object.category);
-  writer.writeStringList(offsets[3], object.denyRoleIds);
-  writer.writeBool(offsets[4], object.isSensitive);
-  writer.writeBool(offsets[5], object.localOnly);
-  writer.writeString(offsets[6], object.name);
-  writer.writeString(offsets[7], object.url);
+  writer.writeBool(offsets[3], object.isSensitive);
+  writer.writeBool(offsets[4], object.localOnly);
+  writer.writeString(offsets[5], object.name);
+  writer.writeString(offsets[6], object.url);
 }
 
 EmojiRecordEntity _emojiRecordEntityDeserialize(
@@ -130,12 +117,11 @@ EmojiRecordEntity _emojiRecordEntityDeserialize(
   object.aliases = reader.readStringList(offsets[0]) ?? [];
   object.allowRoleIds = reader.readStringList(offsets[1]) ?? [];
   object.category = reader.readStringOrNull(offsets[2]);
-  object.denyRoleIds = reader.readStringList(offsets[3]) ?? [];
   object.id = id;
-  object.isSensitive = reader.readBool(offsets[4]);
-  object.localOnly = reader.readBool(offsets[5]);
-  object.name = reader.readString(offsets[6]);
-  object.url = reader.readString(offsets[7]);
+  object.isSensitive = reader.readBool(offsets[3]);
+  object.localOnly = reader.readBool(offsets[4]);
+  object.name = reader.readString(offsets[5]);
+  object.url = reader.readString(offsets[6]);
   return object;
 }
 
@@ -153,14 +139,12 @@ P _emojiRecordEntityDeserializeProp<P>(
     case 2:
       return (reader.readStringOrNull(offset)) as P;
     case 3:
-      return (reader.readStringList(offset) ?? []) as P;
+      return (reader.readBool(offset)) as P;
     case 4:
       return (reader.readBool(offset)) as P;
     case 5:
-      return (reader.readBool(offset)) as P;
-    case 6:
       return (reader.readString(offset)) as P;
-    case 7:
+    case 6:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -814,200 +798,6 @@ extension EmojiRecordEntityQueryFilter
   }
 
   QueryBuilder<EmojiRecordEntity, EmojiRecordEntity, QAfterFilterCondition>
-  denyRoleIdsElementEqualTo(String value, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(
-          property: r'denyRoleIds',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<EmojiRecordEntity, EmojiRecordEntity, QAfterFilterCondition>
-  denyRoleIdsElementGreaterThan(
-    String value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(
-          include: include,
-          property: r'denyRoleIds',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<EmojiRecordEntity, EmojiRecordEntity, QAfterFilterCondition>
-  denyRoleIdsElementLessThan(
-    String value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.lessThan(
-          include: include,
-          property: r'denyRoleIds',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<EmojiRecordEntity, EmojiRecordEntity, QAfterFilterCondition>
-  denyRoleIdsElementBetween(
-    String lower,
-    String upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.between(
-          property: r'denyRoleIds',
-          lower: lower,
-          includeLower: includeLower,
-          upper: upper,
-          includeUpper: includeUpper,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<EmojiRecordEntity, EmojiRecordEntity, QAfterFilterCondition>
-  denyRoleIdsElementStartsWith(String value, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.startsWith(
-          property: r'denyRoleIds',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<EmojiRecordEntity, EmojiRecordEntity, QAfterFilterCondition>
-  denyRoleIdsElementEndsWith(String value, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.endsWith(
-          property: r'denyRoleIds',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<EmojiRecordEntity, EmojiRecordEntity, QAfterFilterCondition>
-  denyRoleIdsElementContains(String value, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.contains(
-          property: r'denyRoleIds',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<EmojiRecordEntity, EmojiRecordEntity, QAfterFilterCondition>
-  denyRoleIdsElementMatches(String pattern, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.matches(
-          property: r'denyRoleIds',
-          wildcard: pattern,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<EmojiRecordEntity, EmojiRecordEntity, QAfterFilterCondition>
-  denyRoleIdsElementIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'denyRoleIds', value: ''),
-      );
-    });
-  }
-
-  QueryBuilder<EmojiRecordEntity, EmojiRecordEntity, QAfterFilterCondition>
-  denyRoleIdsElementIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(property: r'denyRoleIds', value: ''),
-      );
-    });
-  }
-
-  QueryBuilder<EmojiRecordEntity, EmojiRecordEntity, QAfterFilterCondition>
-  denyRoleIdsLengthEqualTo(int length) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(r'denyRoleIds', length, true, length, true);
-    });
-  }
-
-  QueryBuilder<EmojiRecordEntity, EmojiRecordEntity, QAfterFilterCondition>
-  denyRoleIdsIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(r'denyRoleIds', 0, true, 0, true);
-    });
-  }
-
-  QueryBuilder<EmojiRecordEntity, EmojiRecordEntity, QAfterFilterCondition>
-  denyRoleIdsIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(r'denyRoleIds', 0, false, 999999, true);
-    });
-  }
-
-  QueryBuilder<EmojiRecordEntity, EmojiRecordEntity, QAfterFilterCondition>
-  denyRoleIdsLengthLessThan(int length, {bool include = false}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(r'denyRoleIds', 0, true, length, include);
-    });
-  }
-
-  QueryBuilder<EmojiRecordEntity, EmojiRecordEntity, QAfterFilterCondition>
-  denyRoleIdsLengthGreaterThan(int length, {bool include = false}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(r'denyRoleIds', length, include, 999999, true);
-    });
-  }
-
-  QueryBuilder<EmojiRecordEntity, EmojiRecordEntity, QAfterFilterCondition>
-  denyRoleIdsLengthBetween(
-    int lower,
-    int upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'denyRoleIds',
-        lower,
-        includeLower,
-        upper,
-        includeUpper,
-      );
-    });
-  }
-
-  QueryBuilder<EmojiRecordEntity, EmojiRecordEntity, QAfterFilterCondition>
   idEqualTo(Id value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -1546,13 +1336,6 @@ extension EmojiRecordEntityQueryWhereDistinct
   }
 
   QueryBuilder<EmojiRecordEntity, EmojiRecordEntity, QDistinct>
-  distinctByDenyRoleIds() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'denyRoleIds');
-    });
-  }
-
-  QueryBuilder<EmojiRecordEntity, EmojiRecordEntity, QDistinct>
   distinctByIsSensitive() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isSensitive');
@@ -1609,13 +1392,6 @@ extension EmojiRecordEntityQueryProperty
   categoryProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'category');
-    });
-  }
-
-  QueryBuilder<EmojiRecordEntity, List<String>, QQueryOperations>
-  denyRoleIdsProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'denyRoleIds');
     });
   }
 

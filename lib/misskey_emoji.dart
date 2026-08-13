@@ -1,4 +1,3 @@
-export 'src/api/misskey_emoji_api.dart';
 export 'src/cache/emoji_store.dart';
 export 'src/cache/isar_emoji_store.dart';
 export 'src/catalog/catalog.dart';
@@ -7,5 +6,6 @@ export 'src/catalog/persistent_catalog.dart';
 export 'src/catalog/search.dart';
 export 'src/models/emoji_record.dart';
 export 'src/resolver/resolver.dart';
+export 'src/source/emoji_source.dart';
 export 'src/util/server_db.dart';
 export 'src/util/shortcode.dart';

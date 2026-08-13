@@ -12,7 +12,8 @@ void main() {
       expect(EmojiCatalog, isNotNull);
       expect(EmojiStore, isNotNull);
       expect(IsarEmojiStore, isNotNull);
-      expect(MisskeyEmojiApi, isNotNull);
+      expect(EmojiSource, isNotNull);
+      expect(MisskeyClientEmojiSource, isNotNull);
       expect(EmojiSearch, isNotNull);
     });
 
@@ -42,7 +43,6 @@ void main() {
         localOnly: false,
         isSensitive: false,
         allowRoleIds: [],
-        denyRoleIds: [],
       );
 
       expect(record.name, equals('test'));

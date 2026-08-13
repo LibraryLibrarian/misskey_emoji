@@ -5,14 +5,12 @@ import 'catalog.dart';
 /// [EmojiStore]を用いた永続化対応の[EmojiCatalog]実装
 ///
 /// - 初回アクセス時に[store]からキャッシュをロード
-/// - キャッシュが空ならmetaで事前充填
 /// - 同期成功後は最新の絵文字を[store]に保存
 /// - TTLとエラー時クールダウンを尊重して無駄な再試行を避ける
 class PersistentEmojiCatalog extends EmojiCatalogBase {
   PersistentEmojiCatalog({
     required this.store,
-    required super.api,
-    super.meta,
+    required super.source,
     super.ttl,
     super.errorCooldown,
     super.onSyncError,
