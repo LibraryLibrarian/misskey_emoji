@@ -54,10 +54,12 @@ class _EmojiGridItemState extends State<EmojiGridItem> {
       memCacheWidth: 64,
       memCacheHeight: 64,
       placeholder: (_, __) => const Center(
-          child: SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2))),
+        child: SizedBox(
+          width: 16,
+          height: 16,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      ),
       errorWidget: (_, __, ___) =>
           const Icon(Icons.broken_image_outlined, size: 20),
       fadeInDuration: const Duration(milliseconds: 150),
@@ -89,7 +91,7 @@ class _EmojiGridItemState extends State<EmojiGridItem> {
                   ),
                 ],
               ),
-            )
+            ),
           ],
         ),
       );
@@ -102,8 +104,9 @@ class _EmojiGridItemState extends State<EmojiGridItem> {
       child: InkWell(
         borderRadius: borderRadius,
         onTap: _handleTap,
-        onLongPress:
-            widget.record.isSensitive ? widget.onToggleSensitive : null,
+        onLongPress: widget.record.isSensitive
+            ? widget.onToggleSensitive
+            : null,
         child: Stack(
           children: [
             Padding(
@@ -112,10 +115,7 @@ class _EmojiGridItemState extends State<EmojiGridItem> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Expanded(
-                    child: Hero(
-                      tag: widget.record.name,
-                      child: img,
-                    ),
+                    child: Hero(tag: widget.record.name, child: img),
                   ),
                   const SizedBox(height: 4),
                   Text(

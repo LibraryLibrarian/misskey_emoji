@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Flutter ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # 最低サポートバージョン。pubspec.yaml の flutter 制約の下限と揃える
+          - name: '3.35.0'
+            flutter-version: '3.35.0'
+          # 最新安定版。flutter-version を空にすると channel の最新が使われる
+          # (subosito/flutter-action は flutter-version に 'stable' を指定できない)
+          - name: stable
+            flutter-version: ''
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ matrix.flutter-version }}
+          channel: stable
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Check formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Analyze
+        run: flutter analyze --fatal-infos
+
+      - name: Generate code
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      # 生成コードの鮮度のみを検証する。pubspec.lock は Flutter SDK の
+      # バージョンごとに解決結果が変わるため、対象から除外する
+      - name: Check generated code
+        run: git diff --exit-code -- '*.g.dart'
+
+      - name: Run tests
+        run: flutter test
+
+      - name: Validate package
+        run: dart pub publish --dry-run

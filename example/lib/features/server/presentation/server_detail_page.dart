@@ -107,9 +107,9 @@ class _ServerDetailPageState extends State<ServerDetailPage> {
     await Future.delayed(const Duration(milliseconds: 500));
     await _loadEmojiCount();
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('キャッシュをクリアしました')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('キャッシュをクリアしました')));
     }
   }
 
@@ -118,9 +118,7 @@ class _ServerDetailPageState extends State<ServerDetailPage> {
     if (mounted) {
       setState(() {});
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${widget.server.name} を表示サーバーに設定しました'),
-        ),
+        SnackBar(content: Text('${widget.server.name} を表示サーバーに設定しました')),
       );
     }
   }
@@ -130,9 +128,7 @@ class _ServerDetailPageState extends State<ServerDetailPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('サーバーを削除'),
-        content: Text(
-          '${widget.server.name} を削除しますか？\n絵文字キャッシュも合わせて削除されます。',
-        ),
+        content: Text('${widget.server.name} を削除しますか？\n絵文字キャッシュも合わせて削除されます。'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
@@ -174,10 +170,7 @@ class _ServerDetailPageState extends State<ServerDetailPage> {
         final isActive = _isActive;
 
         return Scaffold(
-          appBar: AppBar(
-            title: Text(widget.server.name),
-            centerTitle: true,
-          ),
+          appBar: AppBar(title: Text(widget.server.name), centerTitle: true),
           body: ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -371,10 +364,7 @@ class _ServerDetailPageState extends State<ServerDetailPage> {
   ) {
     return FilledButton.icon(
       onPressed: isActive ? null : _setAsActive,
-      icon: Icon(
-        isActive ? Icons.check_circle : Icons.swap_horiz,
-        size: 20,
-      ),
+      icon: Icon(isActive ? Icons.check_circle : Icons.swap_horiz, size: 20),
       label: Text(isActive ? '現在の表示サーバーです' : '表示サーバーに設定'),
       style: FilledButton.styleFrom(
         minimumSize: const Size(double.infinity, 48),
@@ -382,18 +372,13 @@ class _ServerDetailPageState extends State<ServerDetailPage> {
     );
   }
 
-  Widget _buildActionsSection(
-    ColorScheme colorScheme,
-    TextTheme textTheme,
-  ) {
+  Widget _buildActionsSection(ColorScheme colorScheme, TextTheme textTheme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           '操作',
-          style: textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 12),
         FilledButton.tonal(

@@ -9,18 +9,12 @@ import 'server_detail_page.dart';
 class SettingsPage extends StatelessWidget {
   final ServerManager manager;
 
-  const SettingsPage({
-    super.key,
-    required this.manager,
-  });
+  const SettingsPage({super.key, required this.manager});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('設定'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('設定'), centerTitle: true),
       body: ListenableBuilder(
         listenable: manager,
         builder: (context, _) {
@@ -47,9 +41,7 @@ class SettingsPage extends StatelessWidget {
       children: [
         Text(
           '接続サーバー',
-          style: textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 12),
         if (servers.isEmpty)
@@ -57,11 +49,13 @@ class SettingsPage extends StatelessWidget {
           _buildEmptyState(context, colorScheme, textTheme)
         else ...[
           // サーバーリスト
-          ...servers.map((server) => _ServerListTile(
-                server: server,
-                isActive: server.key == manager.selectedKey,
-                onTap: () => _navigateToServerDetail(context, server),
-              )),
+          ...servers.map(
+            (server) => _ServerListTile(
+              server: server,
+              isActive: server.key == manager.selectedKey,
+              onTap: () => _navigateToServerDetail(context, server),
+            ),
+          ),
           const SizedBox(height: 12),
           // 追加ボタン
           OutlinedButton.icon(
@@ -130,9 +124,7 @@ class SettingsPage extends StatelessWidget {
       children: [
         Text(
           '状態',
-          style: textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 12),
         Container(
@@ -192,19 +184,15 @@ class SettingsPage extends StatelessWidget {
 
   void _navigateToAddServer(BuildContext context) {
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => AddServerPage(manager: manager),
-      ),
+      MaterialPageRoute(builder: (context) => AddServerPage(manager: manager)),
     );
   }
 
   void _navigateToServerDetail(BuildContext context, ServerEntry server) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => ServerDetailPage(
-          manager: manager,
-          server: server,
-        ),
+        builder: (context) =>
+            ServerDetailPage(manager: manager, server: server),
       ),
     );
   }
@@ -241,8 +229,9 @@ class _ServerListTile extends StatelessWidget {
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         leading: CircleAvatar(
-          backgroundColor:
-              isActive ? colorScheme.primaryContainer : colorScheme.surface,
+          backgroundColor: isActive
+              ? colorScheme.primaryContainer
+              : colorScheme.surface,
           child: Icon(
             Icons.dns_outlined,
             color: isActive
@@ -253,9 +242,7 @@ class _ServerListTile extends StatelessWidget {
         ),
         title: Text(
           server.name,
-          style: textTheme.bodyLarge?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
         ),
         subtitle: Text(
           server.url,
@@ -268,10 +255,7 @@ class _ServerListTile extends StatelessWidget {
           children: [
             if (isActive)
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 4,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: colorScheme.primaryContainer,
                   borderRadius: BorderRadius.circular(8),
@@ -299,10 +283,7 @@ class _ServerListTile extends StatelessWidget {
                 ),
               ),
             const SizedBox(width: 4),
-            Icon(
-              Icons.chevron_right,
-              color: colorScheme.onSurfaceVariant,
-            ),
+            Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant),
           ],
         ),
         onTap: onTap,
