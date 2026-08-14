@@ -14,19 +14,26 @@ concurrency:
 
 jobs:
   quality:
-    name: Flutter ${{ matrix.flutter }}
+    name: Flutter ${{ matrix.name }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        flutter: ['3.35.0', stable]
+        include:
+          # 最低サポートバージョン。pubspec.yaml の flutter 制約の下限と揃える
+          - name: '3.35.0'
+            flutter-version: '3.35.0'
+          # 最新安定版。flutter-version を空にすると channel の最新が使われる
+          # (subosito/flutter-action は flutter-version に 'stable' を指定できない)
+          - name: stable
+            flutter-version: ''
     steps:
       - uses: actions/checkout@v7
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ matrix.flutter }}
+          flutter-version: ${{ matrix.flutter-version }}
           channel: stable
 
       - name: Install dependencies
