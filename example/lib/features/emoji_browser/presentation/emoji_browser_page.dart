@@ -97,7 +97,8 @@ class _EmojiBrowserPageState extends State<EmojiBrowserPage>
     return ListenableBuilder(
       listenable: _manager,
       builder: (context, _) {
-        final selectedServer = _manager.selectedServer ??
+        final selectedServer =
+            _manager.selectedServer ??
             (_manager.servers.isNotEmpty
                 ? _manager.servers.first
                 : const ServerEntry(name: '未選択', url: ''));
@@ -146,8 +147,9 @@ class _EmojiBrowserPageState extends State<EmojiBrowserPage>
                         onSync: _manager.sync,
                         searchText: _searchText,
                         selectedCategory: _selectedCategory,
-                        catalogVersion:
-                            _manager.catalogVersionFor(_manager.selectedKey),
+                        catalogVersion: _manager.catalogVersionFor(
+                          _manager.selectedKey,
+                        ),
                         scrollController: _scrollController,
                       ),
                     ),
@@ -205,9 +207,9 @@ class _EmojiBrowserPageState extends State<EmojiBrowserPage>
                                           .textTheme
                                           .bodySmall
                                           ?.copyWith(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onSurfaceVariant,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurfaceVariant,
                                           ),
                                     ),
                                   ],
@@ -215,7 +217,8 @@ class _EmojiBrowserPageState extends State<EmojiBrowserPage>
                               ),
                               IconButton(
                                 icon: const Icon(Icons.sync),
-                                onPressed: _manager.isSyncing ||
+                                onPressed:
+                                    _manager.isSyncing ||
                                         _manager.currentContext?.catalog == null
                                     ? null
                                     : _manager.sync,
@@ -293,15 +296,16 @@ class _EmojiBrowserPageState extends State<EmojiBrowserPage>
     final snapshot = catalog.snapshot();
     final baseList = _searchText.isEmpty
         ? snapshot.entries
-            .where((kv) => kv.key == kv.value.name)
-            .map((kv) => kv.value)
-            .toList()
+              .where((kv) => kv.key == kv.value.name)
+              .map((kv) => kv.value)
+              .toList()
         : [];
 
     final Map<String, int> categoryCounts = <String, int>{};
     for (final e in baseList) {
-      final c =
-          (e.category == null || e.category!.isEmpty) ? '未分類' : e.category!;
+      final c = (e.category == null || e.category!.isEmpty)
+          ? '未分類'
+          : e.category!;
       categoryCounts[c] = (categoryCounts[c] ?? 0) + 1;
     }
 
@@ -319,9 +323,7 @@ class _EmojiBrowserPageState extends State<EmojiBrowserPage>
     final hadServer = _manager.selectedServer != null;
     final previousKey = _manager.selectedKey;
     await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => SettingsPage(manager: _manager),
-      ),
+      MaterialPageRoute(builder: (context) => SettingsPage(manager: _manager)),
     );
 
     // 設定画面から戻った後の自動同期処理

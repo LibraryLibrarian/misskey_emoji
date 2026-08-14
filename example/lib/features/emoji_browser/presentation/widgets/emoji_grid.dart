@@ -60,15 +60,15 @@ class _EmojiGridState extends State<EmojiGrid> {
             Text(
               'サーバーを設定してください',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Theme.of(context).colorScheme.outline,
-                  ),
+                color: Theme.of(context).colorScheme.outline,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               '設定画面からMisskeyサーバーを追加できます',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -109,11 +109,11 @@ class _EmojiGridState extends State<EmojiGrid> {
     final text = searchText;
     final List<EmojiRecord> baseList = text.isEmpty
         ? catalog
-            .snapshot()
-            .entries
-            .where((kv) => kv.key == kv.value.name)
-            .map((kv) => kv.value)
-            .toList()
+              .snapshot()
+              .entries
+              .where((kv) => kv.key == kv.value.name)
+              .map((kv) => kv.value)
+              .toList()
         : EmojiSearch(catalog).query(text, limit: _searchLimit);
 
     final filteredItems = baseList.where((e) {
@@ -122,14 +122,15 @@ class _EmojiGridState extends State<EmojiGrid> {
         return e.category == null || e.category!.isEmpty;
       }
       return e.category == selectedCategory;
-    }).toList()
-      ..sort((a, b) => a.name.compareTo(b.name));
+    }).toList()..sort((a, b) => a.name.compareTo(b.name));
 
     _cachedItems = filteredItems;
   }
 
   Widget _buildEmojiGrid(
-      List<EmojiRecord> items, MisskeyEmojiResolver resolver) {
+    List<EmojiRecord> items,
+    MisskeyEmojiResolver resolver,
+  ) {
     final screenWidth = MediaQuery.of(context).size.width;
     final crossAxisExtent = screenWidth > 600 ? 120.0 : 96.0;
 
@@ -163,8 +164,8 @@ class _EmojiGridState extends State<EmojiGrid> {
                             ? '絵文字がありません'
                             : '該当する絵文字がありません',
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              color: Theme.of(context).colorScheme.outline,
-                            ),
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
                       ),
                     ],
                   ),

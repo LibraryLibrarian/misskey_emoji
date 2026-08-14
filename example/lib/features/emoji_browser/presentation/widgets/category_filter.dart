@@ -29,14 +29,16 @@ class CategoryFilter extends StatelessWidget {
             onSelected: (_) => onSelected(null),
           ),
           const SizedBox(width: 8),
-          ...categories.map((c) => Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: ChoiceChip(
-                  label: Text('$c (${counts[c] ?? 0})'),
-                  selected: selectedCategory == c,
-                  onSelected: (_) => onSelected(c),
-                ),
-              )),
+          ...categories.map(
+            (c) => Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: ChoiceChip(
+                label: Text('$c (${counts[c] ?? 0})'),
+                selected: selectedCategory == c,
+                onSelected: (_) => onSelected(c),
+              ),
+            ),
+          ),
         ],
       ),
     );
