@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-The following breaking changes are planned for the next major release (2.0.0).
+## [2.0.0-beta.1] - 2026-08-14
+
+First pre-release of the 2.0.0 line. Contains the breaking changes listed below.
 
 ### Added
 
