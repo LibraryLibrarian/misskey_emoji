@@ -8,7 +8,6 @@ class EmojiRecord {
     required this.localOnly,
     required this.isSensitive,
     required this.allowRoleIds,
-    required this.denyRoleIds,
   });
 
   /// 正規化済みのプライマリショートコード名
@@ -31,9 +30,6 @@ class EmojiRecord {
 
   /// この絵文字をリアクションとして使用可能なロールID群
   final List<String> allowRoleIds;
-
-  /// この絵文字をリアクションとして使用不可なロールID群
-  final List<String> denyRoleIds;
 
   /// アニメーション画像かどうかの簡易推定
   bool get animated {

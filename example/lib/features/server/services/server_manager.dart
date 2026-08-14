@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:misskey_api_core/misskey_api_core.dart';
+import 'package:misskey_client/misskey_client.dart';
 import 'package:misskey_emoji/misskey_emoji.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -28,9 +28,10 @@ class ServerManager extends ChangeNotifier {
   DateTime? get lastSync => _lastSync;
   bool get isSyncing => _isSyncing;
 
-  ServerEntry? get selectedServer => _servers
-      .cast<ServerEntry?>()
-      .firstWhere((s) => s?.key == _selectedKey, orElse: () => null);
+  ServerEntry? get selectedServer => _servers.cast<ServerEntry?>().firstWhere(
+    (s) => s?.key == _selectedKey,
+    orElse: () => null,
+  );
 
   ServerContext? get currentContext {
     final key = _selectedKey;
@@ -55,7 +56,7 @@ class ServerManager extends ChangeNotifier {
     if (loaded != null && loaded.isNotEmpty) {
       final list =
           (json.decode(loaded) as List?)?.cast<Map<String, dynamic>>() ??
-              const [];
+          const [];
       servers = list.map((j) => ServerEntry.fromJson(j)).toList();
       if (servers.isNotEmpty) {
         final seen = <String>{};
@@ -65,8 +66,10 @@ class ServerManager extends ChangeNotifier {
     _servers = servers;
     if (servers.isNotEmpty) {
       String selectedKey = last ?? servers.first.key;
-      final selectedEntry = servers.firstWhere((e) => e.key == selectedKey,
-          orElse: () => servers.first);
+      final selectedEntry = servers.firstWhere(
+        (e) => e.key == selectedKey,
+        orElse: () => servers.first,
+      );
       await _ensureContextFor(selectedEntry);
       _selectedKey = selectedEntry.key;
     } else {
@@ -80,7 +83,9 @@ class ServerManager extends ChangeNotifier {
   Future<void> _saveServers() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
-        _serversKey, json.encode(_servers.map((e) => e.toJson()).toList()));
+      _serversKey,
+      json.encode(_servers.map((e) => e.toJson()).toList()),
+    );
     if (_selectedKey != null) {
       await prefs.setString(_lastServerKey, _selectedKey!);
     }
@@ -152,7 +157,7 @@ class ServerManager extends ChangeNotifier {
     _status = '接続テスト中...';
     notifyListeners();
     try {
-      await MetaClient(ctx.http).getMeta(refresh: true);
+      await ctx.client.meta.getMeta(refresh: true);
       _status = '接続OK';
       notifyListeners();
       return true;
@@ -202,9 +207,9 @@ class ServerManager extends ChangeNotifier {
     if (ctx == null) {
       // コンテキストが未初期化の場合、対応するサーバーを初期化
       final entry = _servers.cast<ServerEntry?>().firstWhere(
-            (e) => e?.key == key,
-            orElse: () => null,
-          );
+        (e) => e?.key == key,
+        orElse: () => null,
+      );
       if (entry == null) return 0;
       await _ensureContextFor(entry);
       final newCtx = _contexts[key];
@@ -224,9 +229,9 @@ class ServerManager extends ChangeNotifier {
       if (ctx == null) {
         // コンテキストが未初期化の場合、対応するサーバーを初期化
         final entry = _servers.cast<ServerEntry?>().firstWhere(
-              (e) => e?.key == key,
-              orElse: () => null,
-            );
+          (e) => e?.key == key,
+          orElse: () => null,
+        );
         if (entry == null) return -1;
 
         await _ensureContextFor(entry);
@@ -258,23 +263,25 @@ class ServerManager extends ChangeNotifier {
     if (_contexts.containsKey(key)) return;
     _catalogVersions.putIfAbsent(key, () => 0);
     final dir = await getApplicationDocumentsDirectory();
-    final isar =
-        await openEmojiIsarForServer(Uri.parse(entry.url), directory: dir.path);
-    final http = MisskeyHttpClient(
-        config: MisskeyApiConfig(baseUrl: Uri.parse(entry.url)));
-    final api = MisskeyEmojiApi(http);
+    final isar = await openEmojiIsarForServer(
+      Uri.parse(entry.url),
+      directory: dir.path,
+    );
+    final client = MisskeyClient(
+      config: MisskeyClientConfig(baseUrl: Uri.parse(entry.url)),
+    );
+    final source = MisskeyClientEmojiSource(client);
     final store = IsarEmojiStore(isar);
     final catalog = PersistentEmojiCatalog(
-      api: api,
+      source: source,
       store: store,
-      meta: MetaClient(http),
       ttl: const Duration(minutes: 30),
     );
     final resolver = MisskeyEmojiResolver(catalog);
     _contexts[key] = ServerContext(
       isar: isar,
-      http: http,
-      api: api,
+      client: client,
+      source: source,
       store: store,
       catalog: catalog,
       resolver: resolver,

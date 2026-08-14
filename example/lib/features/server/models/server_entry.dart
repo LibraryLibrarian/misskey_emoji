@@ -7,10 +7,7 @@ class ServerEntry {
 
   String get key => serverKeyFromBaseUrl(Uri.parse(url));
 
-  Map<String, dynamic> toJson() => {
-        'name': name,
-        'url': url,
-      };
+  Map<String, dynamic> toJson() => {'name': name, 'url': url};
   factory ServerEntry.fromJson(Map<String, dynamic> json) =>
       ServerEntry(name: json['name'] as String, url: json['url'] as String);
 }

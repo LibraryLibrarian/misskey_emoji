@@ -26,13 +26,12 @@ class EmojiDetailPage extends StatelessWidget {
                   height: 160,
                   fit: BoxFit.contain,
                   placeholder: (_, __) => const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2)),
-                  errorWidget: (_, __, ___) => const Icon(
-                    Icons.broken_image_outlined,
-                    size: 48,
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
                   ),
+                  errorWidget: (_, __, ___) =>
+                      const Icon(Icons.broken_image_outlined, size: 48),
                   fadeInDuration: const Duration(milliseconds: 150),
                   fadeOutDuration: const Duration(milliseconds: 100),
                 ),
@@ -40,13 +39,20 @@ class EmojiDetailPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          Wrap(spacing: 8, runSpacing: 8, children: [
-            _buildChip(theme, 'category', record.category ?? '未分類'),
-            _buildChip(
-                theme, 'animated', image?.animated == true ? 'yes' : 'no'),
-            _buildChip(theme, 'sensitive', record.isSensitive ? 'yes' : 'no'),
-            _buildChip(theme, 'localOnly', record.localOnly ? 'yes' : 'no'),
-          ]),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _buildChip(theme, 'category', record.category ?? '未分類'),
+              _buildChip(
+                theme,
+                'animated',
+                image?.animated == true ? 'yes' : 'no',
+              ),
+              _buildChip(theme, 'sensitive', record.isSensitive ? 'yes' : 'no'),
+              _buildChip(theme, 'localOnly', record.localOnly ? 'yes' : 'no'),
+            ],
+          ),
           const SizedBox(height: 16),
           _buildCardSection(
             context,
@@ -65,10 +71,12 @@ class EmojiDetailPage extends StatelessWidget {
                     spacing: 6,
                     runSpacing: 6,
                     children: record.aliases
-                        .map((a) => Chip(
-                              label: Text(a),
-                              visualDensity: VisualDensity.compact,
-                            ))
+                        .map(
+                          (a) => Chip(
+                            label: Text(a),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        )
                         .toList(),
                   ),
                 ),
@@ -86,13 +94,6 @@ class EmojiDetailPage extends StatelessWidget {
                     ? const Text('なし')
                     : _buildIdWrap(record.allowRoleIds),
               ),
-              ListTile(
-                leading: const Icon(Icons.block),
-                title: const Text('denyRoleIds'),
-                subtitle: record.denyRoleIds.isEmpty
-                    ? const Text('なし')
-                    : _buildIdWrap(record.denyRoleIds),
-              ),
             ],
           ),
         ],
@@ -105,10 +106,9 @@ class EmojiDetailPage extends StatelessWidget {
       spacing: 6,
       runSpacing: 6,
       children: ids
-          .map((id) => Chip(
-                label: Text(id),
-                visualDensity: VisualDensity.compact,
-              ))
+          .map(
+            (id) => Chip(label: Text(id), visualDensity: VisualDensity.compact),
+          )
           .toList(),
     );
   }

@@ -18,9 +18,7 @@ class App extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      supportedLocales: const [
-        Locale('ja', 'JP'),
-      ],
+      supportedLocales: const [Locale('ja', 'JP')],
       home: const EmojiBrowserPage(),
     );
   }

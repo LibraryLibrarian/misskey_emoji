@@ -54,16 +54,10 @@ class _EmojiSearchBarState extends State<EmojiSearchBar> {
           fillColor: colorScheme.surfaceContainerHighest,
           hintText: '絵文字名で検索（前方一致）',
           hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-          prefixIcon: Icon(
-            Icons.search,
-            color: colorScheme.onSurfaceVariant,
-          ),
+          prefixIcon: Icon(Icons.search, color: colorScheme.onSurfaceVariant),
           suffixIcon: widget.controller.text.isNotEmpty
               ? IconButton(
-                  icon: Icon(
-                    Icons.clear,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+                  icon: Icon(Icons.clear, color: colorScheme.onSurfaceVariant),
                   onPressed: () {
                     widget.controller.clear();
                     _onSearchChanged('');
@@ -80,10 +74,7 @@ class _EmojiSearchBarState extends State<EmojiSearchBar> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(28),
-            borderSide: BorderSide(
-              color: colorScheme.primary,
-              width: 1,
-            ),
+            borderSide: BorderSide(color: colorScheme.primary, width: 1),
           ),
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,

@@ -79,19 +79,14 @@ class _AddServerPageState extends State<AddServerPage> {
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('サーバーを追加'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('サーバーを追加'), centerTitle: true),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           // おすすめサーバーセクション
           Text(
             'おすすめサーバー',
-            style: textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 4),
           Text(
@@ -117,9 +112,7 @@ class _AddServerPageState extends State<AddServerPage> {
           // カスタムサーバーセクション
           Text(
             'カスタムサーバー',
-            style: textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 12),
           if (!_showCustomForm)
@@ -233,8 +226,9 @@ class _PresetServerTile extends StatelessWidget {
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         leading: CircleAvatar(
-          backgroundColor:
-              isAdded ? colorScheme.outline : colorScheme.primaryContainer,
+          backgroundColor: isAdded
+              ? colorScheme.outline
+              : colorScheme.primaryContainer,
           child: Icon(
             isAdded ? Icons.check : Icons.dns_outlined,
             color: isAdded
@@ -263,10 +257,7 @@ class _PresetServerTile extends StatelessWidget {
                   color: colorScheme.onSurfaceVariant,
                 ),
               )
-            : Icon(
-                Icons.add_circle_outline,
-                color: colorScheme.primary,
-              ),
+            : Icon(Icons.add_circle_outline, color: colorScheme.primary),
         onTap: onTap,
       ),
     );

@@ -12,7 +12,6 @@ void main() {
         localOnly: false,
         isSensitive: false,
         allowRoleIds: [],
-        denyRoleIds: [],
       );
 
       expect(record.name, equals('test_emoji'));
@@ -22,7 +21,6 @@ void main() {
       expect(record.localOnly, isFalse);
       expect(record.isSensitive, isFalse);
       expect(record.allowRoleIds, isEmpty);
-      expect(record.denyRoleIds, isEmpty);
     });
 
     test('カテゴリなしのレコード作成', () {
@@ -33,7 +31,6 @@ void main() {
         localOnly: false,
         isSensitive: false,
         allowRoleIds: [],
-        denyRoleIds: [],
       );
 
       expect(record.category, isNull);
@@ -47,11 +44,9 @@ void main() {
         localOnly: false,
         isSensitive: false,
         allowRoleIds: ['role1', 'role2'],
-        denyRoleIds: ['role3'],
       );
 
       expect(record.allowRoleIds, equals(['role1', 'role2']));
-      expect(record.denyRoleIds, equals(['role3']));
     });
 
     group('animated getter', () {
@@ -63,7 +58,6 @@ void main() {
           localOnly: false,
           isSensitive: false,
           allowRoleIds: [],
-          denyRoleIds: [],
         );
 
         expect(record.animated, isTrue);
@@ -77,7 +71,6 @@ void main() {
           localOnly: false,
           isSensitive: false,
           allowRoleIds: [],
-          denyRoleIds: [],
         );
 
         expect(record.animated, isTrue);
@@ -91,7 +84,6 @@ void main() {
           localOnly: false,
           isSensitive: false,
           allowRoleIds: [],
-          denyRoleIds: [],
         );
 
         expect(record.animated, isTrue);
@@ -105,7 +97,6 @@ void main() {
           localOnly: false,
           isSensitive: false,
           allowRoleIds: [],
-          denyRoleIds: [],
         );
 
         expect(record.animated, isFalse);
@@ -119,7 +110,6 @@ void main() {
           localOnly: false,
           isSensitive: false,
           allowRoleIds: [],
-          denyRoleIds: [],
         );
 
         expect(record.animated, isFalse);
@@ -133,7 +123,6 @@ void main() {
           localOnly: false,
           isSensitive: false,
           allowRoleIds: [],
-          denyRoleIds: [],
         );
         const recordPng = EmojiRecord(
           name: 'test',
@@ -142,7 +131,6 @@ void main() {
           localOnly: false,
           isSensitive: false,
           allowRoleIds: [],
-          denyRoleIds: [],
         );
 
         expect(recordGif.animated, isTrue);
@@ -157,7 +145,6 @@ void main() {
           localOnly: false,
           isSensitive: false,
           allowRoleIds: [],
-          denyRoleIds: [],
         );
 
         expect(record.animated, isTrue); // パス部分で正しく判定
@@ -172,7 +159,6 @@ void main() {
         localOnly: false,
         isSensitive: false,
         allowRoleIds: [],
-        denyRoleIds: [],
       );
 
       const record2 = EmojiRecord(
@@ -182,7 +168,6 @@ void main() {
         localOnly: false,
         isSensitive: false,
         allowRoleIds: [],
-        denyRoleIds: [],
       );
 
       // 同じconstインスタンスは同一オブジェクトになる

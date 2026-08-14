@@ -1,8 +1,5 @@
-import 'package:misskey_api_core/misskey_api_core.dart';
-
-import '../api/misskey_emoji_api.dart';
-import '../models/emoji_dto.dart';
 import '../models/emoji_record.dart';
+import '../source/emoji_source.dart';
 import '../util/shortcode.dart';
 
 /// 絵文字の参照・同期を行う読み取り専用カタログのインターフェース
@@ -30,18 +27,14 @@ typedef SyncErrorCallback =
 /// 共通ロジックを提供するカタログのベースクラス
 abstract class EmojiCatalogBase implements EmojiCatalog {
   EmojiCatalogBase({
-    required this.api,
-    this.meta,
+    required this.source,
     this.ttl = const Duration(minutes: 30),
     this.errorCooldown = const Duration(minutes: 2),
     this.onSyncError,
   });
 
-  /// 絵文字取得に用いるAPIクライアント
-  final MisskeyEmojiApi api;
-
-  /// インスタンスのメタから事前充填するためのMetaClient（任意）
-  final MetaClient? meta;
+  /// 絵文字取得に用いるデータソース
+  final EmojiSource source;
 
   /// 同期のTTL。この時間内は再同期をスキップ
   final Duration ttl;
@@ -69,7 +62,7 @@ abstract class EmojiCatalogBase implements EmojiCatalog {
   @override
   Map<String, EmojiRecord> snapshot() => Map.unmodifiable(byKey);
 
-  /// カタログをAPI経由で同期する
+  /// カタログをデータソース経由で同期する
   ///
   /// - [force]がfalseの場合、[ttl]と[errorCooldown]を尊重する
   /// - 進行中の同期がある場合、それを待機する（複数の呼び出しが1回の同期を共有）
@@ -104,19 +97,7 @@ abstract class EmojiCatalogBase implements EmojiCatalog {
 
   Future<void> _doSync() async {
     try {
-      if (byKey.isEmpty && meta != null) {
-        final m = await meta!.getMeta();
-        final metaEmojis =
-            (m.raw['emojis'] as List?)?.cast<Map<String, dynamic>>() ??
-            const [];
-        if (metaEmojis.isNotEmpty) {
-          final list = metaEmojis
-              .map((j) => api.toRecord(EmojiDto.fromJson(j)))
-              .toList();
-          byKey = indexRecords(list);
-        }
-      }
-      final newest = await api.fetchAll();
+      final newest = await source.fetchAll();
       byKey = indexRecords(newest);
       await afterFetch(newest);
       _last = DateTime.now();

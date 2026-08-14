@@ -3,8 +3,8 @@ description: Example app for misskey_emoji
 publish_to: 'none'
 
 environment:
-  sdk: ">=3.5.0 <4.0.0"
-  flutter: ">=3.24.0"
+  sdk: ">=3.9.0 <4.0.0"
+  flutter: ">=3.35.0"
 
 dependencies:
   flutter:
@@ -13,10 +13,10 @@ dependencies:
     sdk: flutter
   misskey_emoji:
     path: ..
-  misskey_api_core: ^1.0.0
+  misskey_client: ^1.0.0-beta.6
   cached_network_image: ^3.3.1
   path_provider: ^2.1.4
-  isar_community: ^3.3.0-dev.3
+  isar_community: ^3.3.2
   shared_preferences: ^2.2.3
 
 dev_dependencies:
@@ -24,7 +24,6 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^5.0.0
 
+
 flutter:
   uses-material-design: true
-
-
