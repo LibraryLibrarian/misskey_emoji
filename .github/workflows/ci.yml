@@ -56,14 +56,5 @@ jobs:
       - name: Run tests
         run: flutter test
 
-      - name: DEBUG git state
-        run: |
-          echo '--- git status ---'
-          git status --porcelain
-          echo '--- diff (analysis_options) ---'
-          git diff -- analysis_options.yaml example/analysis_options.yaml | cat
-          echo '--- diff --stat ---'
-          git diff --stat | cat
-
       - name: Validate package
         run: dart pub publish --dry-run
