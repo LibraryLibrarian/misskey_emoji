@@ -1,3 +1,5 @@
+import 'package:meta/meta.dart';
+
 import '../models/emoji_record.dart';
 import '../source/emoji_source.dart';
 import '../util/shortcode.dart';
@@ -99,8 +101,9 @@ abstract class EmojiCatalogBase implements EmojiCatalog {
     try {
       final newest = await source.fetchAll();
       byKey = indexRecords(newest);
-      await afterFetch(newest);
-      _last = DateTime.now();
+      final syncedAt = DateTime.now();
+      await afterFetch(newest, syncedAt);
+      _last = syncedAt;
       _lastError = null;
     } on Exception catch (e, stackTrace) {
       // 既存のキャッシュを保持; エラー時間を記録してクールダウンを適用
@@ -122,11 +125,15 @@ abstract class EmojiCatalogBase implements EmojiCatalog {
     return map;
   }
 
+  /// サブクラスが永続化された同期時刻を復元するために用いる
+  @protected
+  void restoreLastSyncedAt(DateTime value) => _last = value;
+
   /// サブクラスで同期前の処理を実装（例：ストアからのロード）
   Future<void> beforeSync() async {}
 
   /// サブクラスでフェッチ後の処理を実装（例：ストアへの保存）
-  Future<void> afterFetch(List<EmojiRecord> records) async {}
+  Future<void> afterFetch(List<EmojiRecord> records, DateTime syncedAt) async {}
 
   @override
   Future<void> dispose() async {
