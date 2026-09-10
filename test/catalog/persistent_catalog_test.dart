@@ -195,7 +195,7 @@ void main() {
     });
 
     test('0件の同期結果もTTL内の再起動では再取得しない', () async {
-      final emptySource = FakeEmojiSource(records: const []);
+      final emptySource = FakeEmojiSource();
       final firstCatalog = PersistentEmojiCatalog(
         source: emptySource,
         store: store,

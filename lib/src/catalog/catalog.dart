@@ -127,6 +127,7 @@ abstract class EmojiCatalogBase implements EmojiCatalog {
 
   /// サブクラスが永続化された同期時刻を復元するために用いる
   @protected
+  // ignore: use_setters_to_change_properties
   void restoreLastSyncedAt(DateTime value) => _last = value;
 
   /// サブクラスで同期前の処理を実装（例：ストアからのロード）
