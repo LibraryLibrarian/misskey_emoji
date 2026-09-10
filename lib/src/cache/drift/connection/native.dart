@@ -9,16 +9,16 @@ import '../drift_emoji_store.dart';
 import '../emoji_database.dart';
 
 /// ファイルの作成とSQLiteの実行をバックグラウンド接続へ委譲する
-DatabaseConnection openConnection({
+Future<DatabaseConnection> openConnection({
   required String directory,
   required String databaseName,
-}) {
+}) async {
   final file = File(p.join(directory, '$databaseName.sqlite'));
+  // delayedは失敗を複数の内部Futureへ分岐するため、ディレクトリ作成の
+  // I/Oエラーはその前に呼び出し元へ返す（未処理の非同期エラーを防ぐ）。
+  await file.parent.create(recursive: true);
   return DatabaseConnection.delayed(
-    Future(() async {
-      await file.parent.create(recursive: true);
-      return NativeDatabase.createBackgroundConnection(file);
-    }),
+    Future(() => NativeDatabase.createBackgroundConnection(file)),
   );
 }
 
@@ -36,13 +36,14 @@ Future<EmojiStore> openStore({
   if (_openFiles.contains(path) || !_openingFiles.add(path)) {
     throw StateError('同じ絵文字キャッシュは既に開かれているか、オープン中です');
   }
-  final database = EmojiDatabase(
-    openConnection(
-      directory: normalizedDirectory,
-      databaseName: databaseName,
-    ),
-  );
+  EmojiDatabase? database;
   try {
+    database = EmojiDatabase(
+      await openConnection(
+        directory: normalizedDirectory,
+        databaseName: databaseName,
+      ),
+    );
     // Driftの接続は遅延評価されるため、スキーマの初期化まで待ってから登録する。
     await database.customSelect('SELECT 1').get();
     _openFiles.add(path);
@@ -53,7 +54,7 @@ Future<EmojiStore> openStore({
     );
   } on Object {
     try {
-      await database.close();
+      await database?.close();
     } on Object {
       // クリーンアップの失敗で元のオープンエラーを隠さない。
     }
