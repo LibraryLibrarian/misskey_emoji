@@ -61,7 +61,10 @@ class PersistentEmojiCatalog extends EmojiCatalogBase {
 
   /// 同期成功後は最新の絵文字と同期時刻を[store]に保存
   @override
-  Future<void> afterFetch(List<EmojiRecord> records, DateTime syncedAt) async {
+  Future<void> afterFetch(
+    List<EmojiRecord> records, {
+    required DateTime syncedAt,
+  }) async {
     await store.save(records, syncedAt: syncedAt);
   }
 

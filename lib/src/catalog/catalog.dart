@@ -103,7 +103,7 @@ abstract class EmojiCatalogBase implements EmojiCatalog {
       final records = normalizeFetchedRecords(fetchedRecords);
       byKey = indexRecords(records);
       final syncedAt = DateTime.now();
-      await afterFetch(records, syncedAt);
+      await afterFetch(records, syncedAt: syncedAt);
       _last = syncedAt;
       _lastError = null;
     } on Exception catch (e, stackTrace) {
@@ -143,7 +143,12 @@ abstract class EmojiCatalogBase implements EmojiCatalog {
   Future<void> beforeSync() async {}
 
   /// サブクラスでフェッチ後の処理を実装（例：ストアへの保存）
-  Future<void> afterFetch(List<EmojiRecord> records, DateTime syncedAt) async {}
+  ///
+  /// [syncedAt]は同期成功時刻である。
+  Future<void> afterFetch(
+    List<EmojiRecord> records, {
+    required DateTime syncedAt,
+  }) async {}
 
   @override
   Future<void> dispose() async {
