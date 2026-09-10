@@ -291,7 +291,7 @@ If you choose to remove old cache files, do so only after every old 1.x Isar ins
 <directory>/misskey_emoji_*.isar-lck
 ```
 
-Filter by the `misskey_emoji_` prefix before deleting anything. An application may use the same directory for its own unrelated Isar databases, which must not be removed. The package does not migrate these files because they are disposable cache data; copying them would retain the old dependency or hardcode its naming convention.
+The `.isar` file was initially preallocated to 1 MiB and its matching lock file was 16 KiB; both remain after the old store is closed. Filter by the `misskey_emoji_` prefix before deleting anything. An application may use the same directory for its own unrelated Isar databases, which must not be removed. The package does not migrate these files because they are disposable cache data; copying them would retain the old dependency or hardcode its naming convention.
 
 ## API Reference
 
