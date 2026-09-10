@@ -141,11 +141,13 @@ abstract class EmojiCatalogBase implements EmojiCatalog {
   void restoreLastSyncedAt(DateTime value) => _last = value;
 
   /// サブクラスで同期前の処理を実装（例：ストアからのロード）
+  @protected
   Future<void> beforeSync() async {}
 
   /// サブクラスでフェッチ後の処理を実装（例：ストアへの保存）
   ///
   /// [syncedAt]は同期成功時刻である。
+  @protected
   Future<void> afterFetch(
     List<EmojiRecord> records, {
     required DateTime syncedAt,
