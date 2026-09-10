@@ -132,8 +132,8 @@ class DriftEmojiStore implements EmojiStore {
 
 /// 複数サーバーのキャッシュを同時に開く場合の明示的な警告抑制
 ///
-/// Driftのプロセス全体の診断フラグを変更する。利用側アプリケーション自身の
-/// データベースに対する正当な警告も抑制される点に注意する。
+/// 現在のisolate内でDrift全体に効く診断フラグを変更する。利用側アプリケーション
+/// 自身のデータベースに対する正当な警告も抑制される点に注意する。
 void suppressMultipleDatabaseWarning() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
 }
