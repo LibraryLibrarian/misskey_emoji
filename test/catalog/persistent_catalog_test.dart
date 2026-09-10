@@ -41,7 +41,7 @@ class FakeEmojiStore implements EmojiStore {
   Future<EmojiSnapshot> load() async {
     loadCallCount++;
     return EmojiSnapshot(
-      records: List<EmojiRecord>.from(records),
+      records: List<EmojiRecord>.from(records, growable: false),
       syncedAt: syncedAt,
     );
   }
@@ -95,7 +95,7 @@ class FailingOnceEmojiStore extends FakeEmojiStore {
       throw Exception('一時的なロードエラー');
     }
     return EmojiSnapshot(
-      records: List<EmojiRecord>.from(records),
+      records: List<EmojiRecord>.from(records, growable: false),
       syncedAt: syncedAt,
     );
   }
