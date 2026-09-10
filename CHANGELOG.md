@@ -17,7 +17,8 @@ The upcoming release migrates persistence from Isar to Drift (SQLite).
 ### Changed
 
 - **Breaking:** Redesigned `EmojiStore`: `loadAll` / `saveAll` are now `load` / `save`, and `clear`, `count`, and `sizeInBytes` were added. Custom `EmojiStore` implementations must implement the new contract.
-- **Breaking:** Changed the overridable `EmojiCatalogBase.afterFetch` hook from `afterFetch(List<EmojiRecord>)` to `afterFetch(List<EmojiRecord>, {required DateTime syncedAt})`.
+- **Breaking:** Changed the `EmojiCatalogBase.afterFetch` hook from `afterFetch(List<EmojiRecord>)` to `afterFetch(List<EmojiRecord>, {required DateTime syncedAt})`.
+- Marked the `EmojiCatalogBase.beforeSync` and `afterFetch` hooks `@protected`, matching `normalizeFetchedRecords` and `restoreLastSyncedAt`. Subclasses may still override them and call inherited members on `this`; calling them through an instance from outside now reports an analyzer diagnostic. `indexRecords` remains public.
 - **Breaking:** Moved store ownership from `IsarEmojiStore.ownsIsar` to `PersistentEmojiCatalog.ownsStore`.
 - **Breaking:** Raised the minimum SDK versions to Dart `>=3.10.0 <4.0.0` and Flutter `>=3.38.0`.
 - Changed the persistence layer to Drift (SQLite).
