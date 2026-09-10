@@ -103,6 +103,18 @@ class FailingOnceEmojiStore extends FakeEmojiStore {
   }
 }
 
+class DelayedSaveEmojiStore extends FakeEmojiStore {
+  DelayedSaveEmojiStore(this.saveDelay);
+
+  final Duration saveDelay;
+
+  @override
+  Future<void> save(List<EmojiRecord> all, {required DateTime syncedAt}) async {
+    await Future<void>.delayed(saveDelay);
+    await super.save(all, syncedAt: syncedAt);
+  }
+}
+
 void main() {
   group('PersistentEmojiCatalog', () {
     late FakeEmojiSource source;
@@ -148,6 +160,23 @@ void main() {
 
       expect(testCatalog.get('cached_emoji'), isNull);
       expect(testCatalog.get('test_emoji'), isNotNull);
+    });
+
+    test('保存待機より短いTTLでも保存した同期成功時刻をTTL判定に使う', () async {
+      const saveDelay = Duration(milliseconds: 100);
+      final delayedStore = DelayedSaveEmojiStore(saveDelay);
+      final testCatalog = PersistentEmojiCatalog(
+        source: source,
+        store: delayedStore,
+        ttl: const Duration(milliseconds: 25),
+      );
+
+      await testCatalog.sync();
+      expect(delayedStore.savedSyncedAt, isNotNull);
+
+      await testCatalog.sync();
+
+      expect(source.callCount, equals(2));
     });
 
     test('取得エラー時はストアのキャッシュを保持して保存しない', () async {
