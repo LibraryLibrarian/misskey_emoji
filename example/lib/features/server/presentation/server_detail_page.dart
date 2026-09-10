@@ -27,7 +27,7 @@ class ServerDetailPage extends StatefulWidget {
 
 class _ServerDetailPageState extends State<ServerDetailPage> {
   int _emojiCount = 0;
-  int _dbSize = 0;
+  int? _dbSize;
   bool _loadingCount = true;
   bool _testing = false;
   String? _testResult;
@@ -318,10 +318,16 @@ class _ServerDetailPageState extends State<ServerDetailPage> {
                 )
               else
                 Text(
-                  _dbSize < 0 ? '取得失敗' : formatFileSize(_dbSize),
+                  _dbSize == null
+                      ? '計測対象なし'
+                      : _dbSize! < 0
+                      ? '取得失敗'
+                      : formatFileSize(_dbSize!),
                   style: textTheme.bodyLarge?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: _dbSize < 0 ? colorScheme.error : null,
+                    color: _dbSize != null && _dbSize! < 0
+                        ? colorScheme.error
+                        : null,
                   ),
                 ),
             ],

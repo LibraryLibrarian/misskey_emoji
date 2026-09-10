@@ -168,14 +168,14 @@ class ServerManager extends ChangeNotifier {
     }
   }
 
-  Future<void> sync() async {
+  Future<void> sync({bool force = false}) async {
     final catalog = currentContext?.catalog;
     if (catalog == null) return;
     _status = '同期中...';
     _isSyncing = true;
     notifyListeners();
     try {
-      await catalog.sync(force: true);
+      await catalog.sync(force: force);
       final key = _selectedKey;
       if (key != null) {
         _catalogVersions[key] = (_catalogVersions[key] ?? 0) + 1;
@@ -194,9 +194,8 @@ class ServerManager extends ChangeNotifier {
   Future<void> clearCacheFor(String key) async {
     final ctx = _contexts[key];
     if (ctx == null) return;
-    await ctx.isar.writeTxn(() async {
-      await ctx.isar.emojiRecordEntitys.clear();
-    });
+    await ctx.store.clear();
+    // 現在表示中の一覧は維持する。明示的な同期まで表示を変えない既存の挙動に合わせる。
     _status = 'キャッシュをクリアしました';
     notifyListeners();
   }
@@ -214,16 +213,15 @@ class ServerManager extends ChangeNotifier {
       await _ensureContextFor(entry);
       final newCtx = _contexts[key];
       if (newCtx == null) return 0;
-      return newCtx.isar.emojiRecordEntitys.count();
+      return newCtx.store.count();
     }
-    return ctx.isar.emojiRecordEntitys.count();
+    return ctx.store.count();
   }
 
   /// 指定キーのサーバーのデータベース使用サイズを取得（バイト数）
   ///
-  /// Isarの`getSize()`メソッドを使用して、実際に使用されているデータサイズを取得
-  /// 取得失敗時は-1を返す
-  Future<int> getDatabaseSizeFor(String key) async {
+  /// ファイルを持たないストアではnullを返す。取得失敗時は-1を返す。
+  Future<int?> getDatabaseSizeFor(String key) async {
     try {
       final ctx = _contexts[key];
       if (ctx == null) {
@@ -238,11 +236,11 @@ class ServerManager extends ChangeNotifier {
         final newCtx = _contexts[key];
         if (newCtx == null) return -1;
 
-        return await newCtx.isar.emojiRecordEntitys.getSize();
+        return newCtx.store.sizeInBytes();
       }
 
-      return await ctx.isar.emojiRecordEntitys.getSize();
-    } catch (e) {
+      return ctx.store.sizeInBytes();
+    } catch (_) {
       return -1;
     }
   }
@@ -263,15 +261,10 @@ class ServerManager extends ChangeNotifier {
     if (_contexts.containsKey(key)) return;
     _catalogVersions.putIfAbsent(key, () => 0);
     final dir = await getApplicationDocumentsDirectory();
-    final isar = await openEmojiIsarForServer(
-      Uri.parse(entry.url),
-      directory: dir.path,
-    );
-    final client = MisskeyClient(
-      config: MisskeyClientConfig(baseUrl: Uri.parse(entry.url)),
-    );
+    final baseUrl = Uri.parse(entry.url);
+    final store = await openEmojiStoreForServer(baseUrl, directory: dir.path);
+    final client = MisskeyClient(config: MisskeyClientConfig(baseUrl: baseUrl));
     final source = MisskeyClientEmojiSource(client);
-    final store = IsarEmojiStore(isar);
     final catalog = PersistentEmojiCatalog(
       source: source,
       store: store,
@@ -279,7 +272,6 @@ class ServerManager extends ChangeNotifier {
     );
     final resolver = MisskeyEmojiResolver(catalog);
     _contexts[key] = ServerContext(
-      isar: isar,
       client: client,
       source: source,
       store: store,

@@ -144,7 +144,7 @@ class _EmojiBrowserPageState extends State<EmojiBrowserPage>
                       child: EmojiGrid(
                         catalog: _manager.currentContext?.catalog,
                         resolver: _manager.currentContext?.resolver,
-                        onSync: _manager.sync,
+                        onSync: () => _manager.sync(force: true),
                         searchText: _searchText,
                         selectedCategory: _selectedCategory,
                         catalogVersion: _manager.catalogVersionFor(
@@ -221,7 +221,7 @@ class _EmojiBrowserPageState extends State<EmojiBrowserPage>
                                     _manager.isSyncing ||
                                         _manager.currentContext?.catalog == null
                                     ? null
-                                    : _manager.sync,
+                                    : () => _manager.sync(force: true),
                                 tooltip: '同期',
                               ),
                               const SizedBox(width: 8),
@@ -334,21 +334,21 @@ class _EmojiBrowserPageState extends State<EmojiBrowserPage>
     if (!hasServerNow || catalog == null) return;
 
     if (!hadServer) {
-      // サーバーが新規に追加された場合
-      unawaited(_manager.sync());
+      // サーバーを追加した直後は、ユーザー操作として最新一覧を取得する。
+      unawaited(_manager.sync(force: true));
       return;
     }
 
     if (serverChanged) {
-      // アクティブサーバーが変更された場合は必ず同期
+      // サーバー切替時は保存済みのTTLを尊重してキャッシュを優先する。
       unawaited(_manager.sync());
       return;
     }
 
-    // 同じサーバーでもカタログが空なら同期
+    // 空の一覧からの再試行は、TTL内でも取得できるようにする。
     final snapshot = catalog.snapshot();
     if (snapshot.isEmpty) {
-      unawaited(_manager.sync());
+      unawaited(_manager.sync(force: true));
     }
   }
 }
