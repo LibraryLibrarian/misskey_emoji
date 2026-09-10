@@ -11,7 +11,7 @@ void main() {
       expect(PersistentEmojiCatalog, isNotNull);
       expect(EmojiCatalog, isNotNull);
       expect(EmojiStore, isNotNull);
-      expect(IsarEmojiStore, isNotNull);
+      expect(EmojiSnapshot, isNotNull);
       expect(EmojiSource, isNotNull);
       expect(MisskeyClientEmojiSource, isNotNull);
       expect(EmojiSearch, isNotNull);
@@ -26,7 +26,6 @@ void main() {
     test('ユーティリティ関数がエクスポートされている', () {
       expect(normalizeShortcode, isNotNull);
       expect(serverKeyFromBaseUrl, isNotNull);
-      expect(openEmojiIsarForServer, isNotNull);
     });
 
     test('ショートコード正規化が正しく動作する', () {
