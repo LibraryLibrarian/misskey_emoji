@@ -39,12 +39,14 @@ class FakeEmojiStore implements EmojiStore {
   int saveCallCount = 0;
   int disposeCallCount = 0;
   Future<EmojiSnapshot>? pendingLoad;
-  Object? disposeError;
+  Error? disposeError;
+  Future<void>? pendingDispose;
+  final disposeStarted = Completer<void>();
 
   @override
   Future<EmojiSnapshot> load() async {
     loadCallCount++;
-    if (pendingLoad != null) return await pendingLoad!;
+    if (pendingLoad != null) return pendingLoad!;
     return EmojiSnapshot(
       records: List<EmojiRecord>.from(records),
       syncedAt: syncedAt,
@@ -75,6 +77,8 @@ class FakeEmojiStore implements EmojiStore {
   @override
   Future<void> dispose() async {
     disposeCallCount++;
+    if (!disposeStarted.isCompleted) disposeStarted.complete();
+    await pendingDispose;
     if (disposeError != null) throw disposeError!;
   }
 
@@ -443,8 +447,9 @@ void main() {
       final load = Completer<EmojiSnapshot>();
       final syncError = Exception('ロード失敗');
       final disposeError = StateError('ストア破棄失敗');
-      store.pendingLoad = load.future;
-      store.disposeError = disposeError;
+      store
+        ..pendingLoad = load.future
+        ..disposeError = disposeError;
 
       final syncResult = expectLater(catalog.sync(), throwsA(same(syncError)));
       final disposeResult = expectLater(
@@ -471,6 +476,72 @@ void main() {
       await catalog.dispose();
 
       expect(catalog.sync, throwsA(isA<StateError>()));
+    });
+
+    for (final ownsStore in [true, false]) {
+      test('並行disposeは同期と所有ストアの破棄を最後まで待つ（ownsStore: $ownsStore）', () async {
+        final fetch = Completer<void>();
+        final close = Completer<void>();
+        store.pendingDispose = close.future;
+        final testCatalog = PersistentEmojiCatalog(
+          source: FakeEmojiSource(records: _records, waitFor: fetch.future),
+          store: store,
+          ownsStore: ownsStore,
+        );
+        final syncFuture = testCatalog.sync(force: true);
+        final first = testCatalog.dispose();
+        final second = testCatalog.dispose();
+        expect(second, same(first));
+        var completed = 0;
+        final results = [
+          first.then((_) => completed++),
+          second.then((_) => completed++),
+        ];
+
+        await Future<void>.delayed(Duration.zero);
+        expect(completed, isZero);
+        expect(store.disposeCallCount, isZero);
+        expect(store.saveCallCount, isZero);
+        await expectLater(testCatalog.sync(), throwsA(isA<StateError>()));
+
+        fetch.complete();
+        await syncFuture;
+        expect(store.savedRecords, equals(_records));
+        expect(store.saveCallCount, equals(1));
+        if (ownsStore) {
+          await store.disposeStarted.future;
+          expect(completed, isZero);
+          expect(testCatalog.dispose(), same(first));
+        }
+        close.complete();
+        await Future.wait(results);
+
+        expect(completed, equals(2));
+        expect(store.disposeCallCount, ownsStore ? 1 : 0);
+        await testCatalog.dispose();
+        expect(store.disposeCallCount, ownsStore ? 1 : 0);
+      });
+    }
+
+    test('並行disposeと失敗後のdisposeは同じ破棄エラーを共有する', () async {
+      final load = Completer<EmojiSnapshot>();
+      final syncError = Exception('ロード失敗');
+      final disposeError = StateError('ストア破棄失敗');
+      store
+        ..pendingLoad = load.future
+        ..disposeError = disposeError;
+      final syncResult = expectLater(catalog.sync(), throwsA(same(syncError)));
+      final first = catalog.dispose();
+      final second = catalog.dispose();
+      expect(second, same(first));
+      final firstResult = expectLater(first, throwsA(same(disposeError)));
+      final secondResult = expectLater(second, throwsA(same(disposeError)));
+
+      load.completeError(syncError);
+      await Future.wait([syncResult, firstResult, secondResult]);
+      expect(catalog.dispose(), same(first));
+      await expectLater(catalog.dispose(), throwsA(same(disposeError)));
+      expect(store.disposeCallCount, equals(1));
     });
 
     test('disposeは進行中のsyncを待機する', () async {

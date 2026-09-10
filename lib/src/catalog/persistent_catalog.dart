@@ -27,7 +27,7 @@ class PersistentEmojiCatalog extends EmojiCatalogBase {
   final bool ownsStore;
 
   bool _restored = false;
-  bool _storeDisposed = false;
+  Future<void>? _disposing;
 
   /// 初回呼び出しでは[store]からのロードを試みる
   @override
@@ -74,13 +74,17 @@ class PersistentEmojiCatalog extends EmojiCatalogBase {
   /// リソース解放の失敗を呼び出し側に伝えるためであり、同期エラーは
   /// dispose()からは送出しないが、元のsync()のFutureから確認できる。
   /// ストアの破棄が成功した場合は、同期エラーをそのまま送出する。
+  ///
+  /// 複数回呼び出した場合は、ストアの破棄まで含む同じFutureを返す。
+  /// 終了処理が失敗した後も再実行せず、同じエラーを返す。
   @override
-  Future<void> dispose() async {
+  Future<void> dispose() => _disposing ??= _dispose();
+
+  Future<void> _dispose() async {
     try {
       await super.dispose();
     } finally {
-      if (ownsStore && !_storeDisposed) {
-        _storeDisposed = true;
+      if (ownsStore) {
         await store.dispose();
       }
     }
