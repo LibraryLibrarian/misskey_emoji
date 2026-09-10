@@ -12,14 +12,16 @@ The upcoming release migrates persistence from Isar to Drift (SQLite).
 ### Added
 
 - Added `EmojiSnapshot`, which returns saved records and their synchronization timestamp together
+- Added the protected `EmojiCatalogBase.normalizeFetchedRecords(List<EmojiRecord>)` hook, returning the records used by both indexing and `afterFetch`. The default implementation leaves records unchanged.
 
 ### Changed
 
 - **Breaking:** Redesigned `EmojiStore`: `loadAll` / `saveAll` are now `load` / `save`, and `clear`, `count`, and `sizeInBytes` were added. Custom `EmojiStore` implementations must implement the new contract.
-- **Breaking:** Changed the protected, overridable `EmojiCatalogBase.afterFetch` hook from `afterFetch(List<EmojiRecord>)` to `afterFetch(List<EmojiRecord>, {required DateTime syncedAt})`.
+- **Breaking:** Changed the overridable `EmojiCatalogBase.afterFetch` hook from `afterFetch(List<EmojiRecord>)` to `afterFetch(List<EmojiRecord>, {required DateTime syncedAt})`.
 - **Breaking:** Moved store ownership from `IsarEmojiStore.ownsIsar` to `PersistentEmojiCatalog.ownsStore`.
 - **Breaking:** Raised the minimum SDK versions to Dart `>=3.10.0 <4.0.0` and Flutter `>=3.38.0`.
 - Changed the persistence layer to Drift (SQLite).
+- **Behavior change:** `PersistentEmojiCatalog` now deduplicates fetched records by `name` before indexing, using the last value and last occurrence position. If a custom source returns duplicate names, aliases found only on overwritten records no longer resolve immediately after synchronization, matching restored-cache behavior. `InMemoryEmojiCatalog` behavior is unchanged.
 - `PersistentEmojiCatalog` now persists the synchronization timestamp, so restarting within the TTL no longer refetches emoji metadata over the network.
 - Added a hash suffix to each server database filename, preventing different hosts with colliding server keys from sharing a cache file.
 - When changing the `EmojiDatabase` schema, increment `EmojiDatabase.schemaVersion`. `destructiveFallback` runs only when versions differ; it does not run through `onCreate`.
