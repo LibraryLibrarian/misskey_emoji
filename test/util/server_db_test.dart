@@ -16,7 +16,7 @@ void main() {
     final expected = File(
       '${directory.path}/misskey_emoji_https_misskey_io_e333a9d6.sqlite',
     );
-    expect(await expected.exists(), isTrue);
+    expect(expected.existsSync(), isTrue);
     expect(await expected.length(), greaterThan(0));
     expect(await store.count(), isZero);
   });

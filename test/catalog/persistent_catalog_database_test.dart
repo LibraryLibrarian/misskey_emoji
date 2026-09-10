@@ -96,7 +96,6 @@ void main() {
     final catalog = PersistentEmojiCatalog(
       source: FakeEmojiSource(),
       store: store,
-      ownsStore: true,
     );
     catalogs.add(catalog);
     await catalog.sync();

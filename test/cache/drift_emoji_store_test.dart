@@ -3,10 +3,10 @@ import 'dart:io';
 import 'package:drift/drift.dart' show DatabaseConnection;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:misskey_emoji/misskey_emoji.dart';
 import 'package:misskey_emoji/src/cache/drift/connection/native.dart';
 import 'package:misskey_emoji/src/cache/drift/drift_emoji_store.dart';
 import 'package:misskey_emoji/src/cache/drift/emoji_database.dart';
-import 'package:misskey_emoji/misskey_emoji.dart';
 
 const _first = EmojiRecord(
   name: 'z',
@@ -125,6 +125,20 @@ void main() {
       expect(await store.count(), 1);
     });
 
+    test('名前と属性に含まれる特殊文字をそのまま保存して読み込める', () async {
+      const record = EmojiRecord(
+        name: '日本語_😀_\"\\\n',
+        aliases: ['引用符\"', '逆斜線\\', '改行\n', ''],
+        category: '分類\n\"',
+        url: 'https://example.com/emoji.png?query=%22&value=1',
+        localOnly: true,
+        isSensitive: true,
+        allowRoleIds: ['役割\"\\'],
+      );
+      await store.save([record], syncedAt: syncedAt);
+      expect(_values((await store.load()).records.single), _values(record));
+    });
+
     test('大量のレコードを入力順のまま保存して読み込める', () async {
       final records = List.generate(
         15000,
@@ -150,7 +164,7 @@ void main() {
       await store.save([_first], syncedAt: syncedAt);
       final records = (await store.load()).records;
       expect(() => records.add(_second), throwsUnsupportedError);
-      expect(() => records.removeLast(), throwsUnsupportedError);
+      expect(records.removeLast, throwsUnsupportedError);
     });
 
     test('重複を後勝ちで除去し最後の出現位置へ移す', () async {

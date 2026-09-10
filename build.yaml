@@ -3,6 +3,7 @@ targets:
     sources:
       include:
         - lib/**
+        - test/**
         - $package$
     builders:
       drift_dev:
