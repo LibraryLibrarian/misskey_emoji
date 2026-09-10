@@ -77,6 +77,8 @@ void main() {
 
     test('全属性とマイクロ秒の同期時刻を入力順で復元する', () async {
       await store.save([_first, _second], syncedAt: syncedAt);
+      // ORDER BYの削除を、現在のSQLiteの既定走査順に依存せず検出する。
+      await database.customStatement('PRAGMA reverse_unordered_selects = ON');
       final snapshot = await store.load();
       expect(snapshot.syncedAt, syncedAt);
       expect(snapshot.records.map((record) => record.name), ['z', 'a']);
