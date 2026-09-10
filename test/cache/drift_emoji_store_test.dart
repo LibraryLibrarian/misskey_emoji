@@ -127,13 +127,13 @@ void main() {
 
     test('名前と属性に含まれる特殊文字をそのまま保存して読み込める', () async {
       const record = EmojiRecord(
-        name: '日本語_😀_\"\\\n',
-        aliases: ['引用符\"', '逆斜線\\', '改行\n', ''],
-        category: '分類\n\"',
+        name: '日本語_😀_"\\\n',
+        aliases: ['引用符"', '逆斜線\\', '改行\n', ''],
+        category: '分類\n"',
         url: 'https://example.com/emoji.png?query=%22&value=1',
         localOnly: true,
         isSensitive: true,
-        allowRoleIds: ['役割\"\\'],
+        allowRoleIds: ['役割"\\'],
       );
       await store.save([record], syncedAt: syncedAt);
       expect(_values((await store.load()).records.single), _values(record));
