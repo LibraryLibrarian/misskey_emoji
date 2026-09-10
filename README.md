@@ -35,9 +35,12 @@ Add this to your package's `pubspec.yaml` file:
 ```yaml
 dependencies:
   misskey_emoji: ^2.0.0-beta.1
+  misskey_client: ^1.0.0-beta.6
 ```
 
-This release requires Dart `>=3.10.0 <4.0.0` and Flutter `>=3.38.0`.
+`misskey_client` is directly imported by the Misskey Quick Start below. It is not needed when you supply a custom `EmojiSource`.
+
+This development version requires Dart `>=3.10.0 <4.0.0` and Flutter `>=3.38.0`.
 
 ## Quick Start
 

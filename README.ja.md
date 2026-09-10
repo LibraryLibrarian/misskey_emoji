@@ -35,9 +35,12 @@ Misskey MFM（Markup For Misskey）絵文字のメタデータをキャッシュ
 ```yaml
 dependencies:
   misskey_emoji: ^2.0.0-beta.1
+  misskey_client: ^1.0.0-beta.6
 ```
 
-このリリースにはDart `>=3.10.0 <4.0.0`およびFlutter `>=3.38.0`が必要です。
+以下のMisskey向けの例では`misskey_client`を直接importします。独自の`EmojiSource`を使用する場合、この直接依存は不要です。
+
+この開発版にはDart `>=3.10.0 <4.0.0`およびFlutter `>=3.38.0`が必要です。
 
 ## 利用方法
 
