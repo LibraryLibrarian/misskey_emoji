@@ -2,6 +2,8 @@ analyzer:
   exclude:
     - "**/*.g.dart"
     - "**/*.freezed.dart"
+    # exampleは別アプリであり、移行完了までルートパッケージの解析対象から除外する。
+    - example/**
     # 新しいFlutterはこれらの除外を自動で書き加えるため、あらかじめ記載しておく。
     # 記載が無いとCI上でファイルが書き換わり、publishの検証が
     # 「checked-in files are modified」で失敗する
