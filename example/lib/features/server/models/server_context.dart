@@ -16,5 +16,8 @@ class ServerContext {
     required this.resolver,
   });
 
-  Future<void> close() => catalog.dispose();
+  Future<void> close() async {
+    await resolver.dispose();
+    await catalog.dispose();
+  }
 }
