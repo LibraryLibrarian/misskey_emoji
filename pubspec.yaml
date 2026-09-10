@@ -3,7 +3,9 @@ version: 2.0.0-beta.1
 homepage: https://librarylibrarian.com
 environment:
   sdk: ">=3.10.0 <4.0.0"
-  flutter: ">=3.38.0"
+  # 3.38.0の同梱Dartは3.10.0-290.4.betaで、プレリリースは>=3.10.0を満たさない。
+  # Dart 3.10.0の正式版を積むのは3.38.1から。
+  flutter: ">=3.38.1"
 description: A Flutter library for caching, resolving, and searching Misskey custom emoji metadata.
 dependencies:
   drift: ^2.34.4
