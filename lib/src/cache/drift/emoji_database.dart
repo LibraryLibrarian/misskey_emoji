@@ -29,7 +29,7 @@ class SyncMetadata extends Table {
 /// 接続方式に依存しない絵文字キャッシュのスキーマ
 @DriftDatabase(tables: [EmojiRecords, SyncMetadata])
 class EmojiDatabase extends _$EmojiDatabase {
-  EmojiDatabase(QueryExecutor executor) : super(executor);
+  EmojiDatabase(super.e);
 
   @override
   int get schemaVersion => 1;

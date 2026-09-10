@@ -27,9 +27,9 @@ class DriftEmojiStore implements EmojiStore {
   }
 
   @override
-  Future<EmojiSnapshot> load() async {
+  Future<EmojiSnapshot> load() {
     _checkOpen();
-    return await database.transaction(() async {
+    return database.transaction(() async {
       final query = database.select(database.emojiRecords)
         ..orderBy([(table) => OrderingTerm.asc(table.rowId)]);
       final rows = await query.get();
