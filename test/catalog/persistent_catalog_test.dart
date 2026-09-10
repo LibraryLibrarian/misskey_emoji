@@ -84,6 +84,25 @@ class FakeEmojiStore implements EmojiStore {
   }
 }
 
+class FailingOnceEmojiStore extends FakeEmojiStore {
+  FailingOnceEmojiStore({super.records, super.syncedAt});
+
+  bool _shouldFail = true;
+
+  @override
+  Future<EmojiSnapshot> load() async {
+    loadCallCount++;
+    if (_shouldFail) {
+      _shouldFail = false;
+      throw Exception('一時的なロードエラー');
+    }
+    return EmojiSnapshot(
+      records: List<EmojiRecord>.from(records),
+      syncedAt: syncedAt,
+    );
+  }
+}
+
 void main() {
   group('PersistentEmojiCatalog', () {
     late FakeEmojiSource source;
@@ -199,6 +218,24 @@ void main() {
       await testCatalog.sync();
 
       expect(cachedStore.loadCallCount, equals(1));
+      expect(source.callCount, isZero);
+      expect(testCatalog.get('test_emoji'), isNotNull);
+    });
+
+    test('ロード失敗後の同期ではストアから再度復元を試みる', () async {
+      final retryStore = FailingOnceEmojiStore(
+        records: _records,
+        syncedAt: DateTime.now(),
+      );
+      final testCatalog = PersistentEmojiCatalog(
+        source: source,
+        store: retryStore,
+      );
+
+      await expectLater(testCatalog.sync(), throwsA(isA<Exception>()));
+      await testCatalog.sync();
+
+      expect(retryStore.loadCallCount, equals(2));
       expect(source.callCount, isZero);
       expect(testCatalog.get('test_emoji'), isNotNull);
     });

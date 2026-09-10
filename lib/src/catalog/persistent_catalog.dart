@@ -33,7 +33,6 @@ class PersistentEmojiCatalog extends EmojiCatalogBase {
   @override
   Future<void> beforeSync() async {
     if (_restored) return;
-    _restored = true;
 
     final snapshot = await store.load();
     if (snapshot.records.isNotEmpty) {
@@ -43,6 +42,7 @@ class PersistentEmojiCatalog extends EmojiCatalogBase {
     if (syncedAt != null) {
       restoreLastSyncedAt(syncedAt);
     }
+    _restored = true;
   }
 
   /// ストアの保存契約に従い、name重複を後勝ちで除去する
