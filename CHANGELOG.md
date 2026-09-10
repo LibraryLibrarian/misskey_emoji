@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0-beta.2] - 2026-09-10
+
+This pre-release continues the 2.0.0 migration from Isar to Drift (SQLite).
+
+### Added
+
+- Added `EmojiSnapshot`, which returns saved records and their synchronization timestamp together
+
+### Changed
+
+- **Breaking:** Redesigned `EmojiStore`: `loadAll` / `saveAll` are now `load` / `save`, and `clear`, `count`, and `sizeInBytes` were added. Custom `EmojiStore` implementations must implement the new contract.
+- **Breaking:** Changed the protected, overridable `EmojiCatalogBase.afterFetch` hook from `afterFetch(List<EmojiRecord>)` to `afterFetch(List<EmojiRecord>, {required DateTime syncedAt})`.
+- **Breaking:** Moved store ownership from `IsarEmojiStore.ownsIsar` to `PersistentEmojiCatalog.ownsStore`.
+- **Breaking:** Raised the minimum SDK versions to Dart `>=3.10.0 <4.0.0` and Flutter `>=3.38.0`.
+- Changed the persistence layer to Drift (SQLite).
+- `PersistentEmojiCatalog` now persists the synchronization timestamp, so restarting within the TTL no longer refetches emoji metadata over the network.
+- Added a hash suffix to each server database filename, preventing different hosts with colliding server keys from sharing a cache file.
+- When changing the `EmojiDatabase` schema, increment `EmojiDatabase.schemaVersion`. `destructiveFallback` runs only when versions differ; it does not run through `onCreate`.
+
+### Removed
+
+- **Breaking:** Removed `IsarEmojiStore`, `EmojiRecordEntity`, `EmojiRecordEntitySchema`, `toEntity`, `fromEntity`, `openEmojiIsarForServer`, and the ten generated Isar collection and query extensions.
+
 ## [2.0.0-beta.1] - 2026-08-14
 
 First pre-release of the 2.0.0 line. Contains the breaking changes listed below.
