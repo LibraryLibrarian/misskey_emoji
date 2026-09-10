@@ -178,7 +178,7 @@ final catalog = PersistentEmojiCatalog(
 suppressMultipleDatabaseWarning();
 ```
 
-この関数はDriftのプロセス全体に効く診断フラグを変更します。そのため利用側アプリケーション自身のDBに対する複数DB警告も抑制されます。この影響を許容できる場合だけ明示的に呼び出してください。
+この関数は現在のisolate内でDrift全体に効く診断設定を変更します。他のisolateには影響しません。そのため同じisolate内にある利用側アプリケーション自身のDBに対する複数DB警告も抑制されます。この影響を許容できる場合だけ明示的に呼び出してください。
 
 ### Riverpodとの統合
 

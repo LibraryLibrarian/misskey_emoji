@@ -178,7 +178,7 @@ Opening one persistent cache for each server creates one database instance per s
 suppressMultipleDatabaseWarning();
 ```
 
-This changes a process-global Drift diagnostic flag. It also suppresses multiple-database warnings for databases owned by the consuming application, so only opt in when that trade-off is appropriate.
+This changes a current-isolate-wide Drift setting; other isolates are unaffected. It also suppresses multiple-database warnings for databases owned by the consuming application in the same isolate, so only opt in when that trade-off is appropriate.
 
 ### Riverpod integration examples
 
