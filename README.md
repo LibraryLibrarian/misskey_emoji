@@ -179,14 +179,18 @@ This changes a process-global Drift diagnostic flag. It also suppresses multiple
 
 ### Riverpod integration examples
 
-The following snippets assume the usual Riverpod, Flutter, and `path_provider` imports and code generation setup.
+The following snippets assume `dart:async`, the usual Riverpod, Flutter, and `path_provider` imports and code generation setup.
+
+These are application-lifetime providers. `@Riverpod(keepAlive: true)` prevents automatic disposal on navigation; dispose the application root container only at shutdown. `Ref.onDispose` invokes a synchronous callback and does not await a Future. The explicit `unawaited` calls below are fire-and-forget, with asynchronous cleanup errors logged via `catchError`. Completion of cleanup at shutdown is not guaranteed either.
+
+`keepAlive` does not prevent recreation after manual invalidation or dependency changes. Do not invalidate these providers or dispose the container during initialization or synchronization. Immediately reopening the same cache after disposal can throw `StateError` because DB close and file-registration removal may still be pending. If your running application needs to switch caches, move DB ownership outside providers to an application-lifetime owner: stop new operations, wait for ongoing operations, then explicitly `await catalog.dispose()` (for a shared store, dispose each catalog before `await store.dispose()`) before reopening.
 
 #### Single catalog
 
 Leave `ownsStore` at its default (`true`) when a catalog is the only user of its store. Dispose only the catalog.
 
 ```dart
-@riverpod
+@Riverpod(keepAlive: true)
 class EmojiCatalogNotifier extends _$EmojiCatalogNotifier {
   @override
   FutureOr<PersistentEmojiCatalog> build() async {
@@ -207,8 +211,10 @@ class EmojiCatalogNotifier extends _$EmojiCatalogNotifier {
       },
     );
 
-    ref.onDispose(() async {
-      await catalog.dispose();
+    ref.onDispose(() {
+      unawaited(catalog.dispose().catchError((Object error, StackTrace stackTrace) {
+        debugPrint('Emoji cleanup failed: $error\n$stackTrace');
+      }));
     });
 
     await catalog.sync();
@@ -222,7 +228,7 @@ class EmojiCatalogNotifier extends _$EmojiCatalogNotifier {
 When multiple catalogs share one store, set `ownsStore: false` on every catalog. A separate provider owns and disposes the shared store.
 
 ```dart
-@riverpod
+@Riverpod(keepAlive: true)
 Future<EmojiStore> emojiStore(Ref ref) async {
   final appDir = await getApplicationDocumentsDirectory();
   final store = await openEmojiStoreForServer(
@@ -230,13 +236,15 @@ Future<EmojiStore> emojiStore(Ref ref) async {
     directory: appDir.path,
   );
 
-  ref.onDispose(() async {
-    await store.dispose();
+  ref.onDispose(() {
+    unawaited(store.dispose().catchError((Object error, StackTrace stackTrace) {
+      debugPrint('Emoji cleanup failed: $error\n$stackTrace');
+    }));
   });
   return store;
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 class EmojiCatalogNotifier extends _$EmojiCatalogNotifier {
   @override
   FutureOr<PersistentEmojiCatalog> build() async {
@@ -254,8 +262,10 @@ class EmojiCatalogNotifier extends _$EmojiCatalogNotifier {
       },
     );
 
-    ref.onDispose(() async {
-      await catalog.dispose();
+    ref.onDispose(() {
+      unawaited(catalog.dispose().catchError((Object error, StackTrace stackTrace) {
+        debugPrint('Emoji cleanup failed: $error\n$stackTrace');
+      }));
     });
 
     await catalog.sync();

@@ -179,14 +179,18 @@ suppressMultipleDatabaseWarning();
 
 ### Riverpodとの統合
 
-以下の例では、通常のRiverpod、Flutter、`path_provider`のimportとコード生成設定が済んでいることを前提にしています。
+以下の例では、`dart:async`、通常のRiverpod、Flutter、`path_provider`のimportとコード生成設定が済んでいることを前提にしています。
+
+これらはアプリケーション寿命のプロバイダーです。`@Riverpod(keepAlive: true)`で画面遷移による自動破棄を防ぎ、アプリのルートコンテナを終了時だけ破棄してください。`Ref.onDispose`は同期コールバックであり、Futureを待ちません。以下の`unawaited`は明示的なfire-and-forgetで、非同期cleanupのエラーは`catchError`で記録します。終了時のcleanup完了も保証しません。
+
+`keepAlive`でも手動invalidateや依存変更による再生成は防げません。これらのプロバイダーをinvalidateしたり、初期化・同期中にコンテナを破棄したりしないでください。破棄直後に同じキャッシュを開くと、DB closeとファイル登録解除が未完了のため`StateError`になり得ます。実行中のアプリでキャッシュを切り替える必要がある場合は、DBの所有権をプロバイダー外のアプリケーション寿命のownerへ移し、新規操作を止め、進行中の操作を待ち、`await catalog.dispose()`（共有ストアなら各カタログの後に`await store.dispose()`）を完了してから再オープンしてください。
 
 #### 単一カタログ
 
 1つのカタログだけがストアを使用する場合は、`ownsStore`を既定値（`true`）のまま使用してください。破棄するのはカタログだけです。
 
 ```dart
-@riverpod
+@Riverpod(keepAlive: true)
 class EmojiCatalogNotifier extends _$EmojiCatalogNotifier {
   @override
   FutureOr<PersistentEmojiCatalog> build() async {
@@ -207,8 +211,10 @@ class EmojiCatalogNotifier extends _$EmojiCatalogNotifier {
       },
     );
 
-    ref.onDispose(() async {
-      await catalog.dispose();
+    ref.onDispose(() {
+      unawaited(catalog.dispose().catchError((Object error, StackTrace stackTrace) {
+        debugPrint('絵文字cleanup失敗: $error\n$stackTrace');
+      }));
     });
 
     await catalog.sync();
@@ -222,7 +228,7 @@ class EmojiCatalogNotifier extends _$EmojiCatalogNotifier {
 複数のカタログで1つのストアを共有する場合は、すべてのカタログに`ownsStore: false`を指定してください。共有ストアは別のプロバイダーが所有して破棄します。
 
 ```dart
-@riverpod
+@Riverpod(keepAlive: true)
 Future<EmojiStore> emojiStore(Ref ref) async {
   final appDir = await getApplicationDocumentsDirectory();
   final store = await openEmojiStoreForServer(
@@ -230,13 +236,15 @@ Future<EmojiStore> emojiStore(Ref ref) async {
     directory: appDir.path,
   );
 
-  ref.onDispose(() async {
-    await store.dispose();
+  ref.onDispose(() {
+    unawaited(store.dispose().catchError((Object error, StackTrace stackTrace) {
+      debugPrint('絵文字cleanup失敗: $error\n$stackTrace');
+    }));
   });
   return store;
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 class EmojiCatalogNotifier extends _$EmojiCatalogNotifier {
   @override
   FutureOr<PersistentEmojiCatalog> build() async {
@@ -254,8 +262,10 @@ class EmojiCatalogNotifier extends _$EmojiCatalogNotifier {
       },
     );
 
-    ref.onDispose(() async {
-      await catalog.dispose();
+    ref.onDispose(() {
+      unawaited(catalog.dispose().catchError((Object error, StackTrace stackTrace) {
+        debugPrint('絵文字cleanup失敗: $error\n$stackTrace');
+      }));
     });
 
     await catalog.sync();
