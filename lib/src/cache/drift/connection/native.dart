@@ -70,9 +70,8 @@ Future<int> databaseSizeInBytes(String path) async {
   for (final suffix in ['-wal', '-shm']) {
     try {
       size += await File('$path$suffix').length();
-    } on FileSystemException catch (error) {
-      // 存在しない補助ファイルだけを無視し、権限などのI/Oエラーは伝播する。
-      if (error.osError?.errorCode != 2) rethrow;
+    } on PathNotFoundException {
+      // 任意の補助ファイルが存在しない場合だけ無視する。
     }
   }
   return size;
