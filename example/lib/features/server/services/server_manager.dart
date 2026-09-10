@@ -381,7 +381,8 @@ class ServerManager extends ChangeNotifier {
         firstStackTrace ??= stackTrace;
       }
     }
-    if (firstError != null)
+    if (firstError != null) {
       Error.throwWithStackTrace(firstError, firstStackTrace!);
+    }
   }
 }
