@@ -267,10 +267,10 @@ class ServerManager extends ChangeNotifier {
         final newCtx = _contexts[key];
         if (newCtx == null) return -1;
 
-        return newCtx.store.sizeInBytes();
+        return await newCtx.store.sizeInBytes();
       }
 
-      return ctx.store.sizeInBytes();
+      return await ctx.store.sizeInBytes();
     } catch (_) {
       return -1;
     }
