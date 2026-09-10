@@ -45,6 +45,20 @@ class PersistentEmojiCatalog extends EmojiCatalogBase {
     }
   }
 
+  /// ストアの保存契約に従い、name重複を後勝ちで除去する
+  ///
+  /// ストアから復元した後も同期直後と同じエイリアス解決結果にするため、
+  /// インデックス化の前に行う。
+  @override
+  List<EmojiRecord> normalizeFetchedRecords(List<EmojiRecord> records) {
+    final recordsByName = <String, EmojiRecord>{};
+    for (final record in records) {
+      recordsByName.remove(record.name);
+      recordsByName[record.name] = record;
+    }
+    return recordsByName.values.toList(growable: false);
+  }
+
   /// 同期成功後は最新の絵文字と同期時刻を[store]に保存
   @override
   Future<void> afterFetch(List<EmojiRecord> records, DateTime syncedAt) async {

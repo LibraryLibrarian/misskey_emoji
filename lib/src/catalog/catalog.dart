@@ -99,10 +99,11 @@ abstract class EmojiCatalogBase implements EmojiCatalog {
 
   Future<void> _doSync() async {
     try {
-      final newest = await source.fetchAll();
-      byKey = indexRecords(newest);
+      final fetchedRecords = await source.fetchAll();
+      final records = normalizeFetchedRecords(fetchedRecords);
+      byKey = indexRecords(records);
       final syncedAt = DateTime.now();
-      await afterFetch(newest, syncedAt);
+      await afterFetch(records, syncedAt);
       _last = syncedAt;
       _lastError = null;
     } on Exception catch (e, stackTrace) {
@@ -112,6 +113,14 @@ abstract class EmojiCatalogBase implements EmojiCatalog {
       onSyncError?.call(e, stackTrace);
     }
   }
+
+  /// 取得したレコード一覧をカタログ用に正規化する
+  ///
+  /// 既定では取得順序を含めて入力をそのまま返す。永続カタログだけは、保存後の復元時も
+  /// 同じ解決結果にするため、ストアの保存契約に合わせてname重複を除去する。
+  @protected
+  List<EmojiRecord> normalizeFetchedRecords(List<EmojiRecord> records) =>
+      records;
 
   /// レコード一覧を正規化済みショートコードのマップに変換する
   Map<String, EmojiRecord> indexRecords(List<EmojiRecord> list) {

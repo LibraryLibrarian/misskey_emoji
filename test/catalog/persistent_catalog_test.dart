@@ -145,6 +145,47 @@ void main() {
       expect(cachedStore.saveCallCount, isZero);
     });
 
+    test('name重複時も保存前後でショートコードの解決結果が一致する', () async {
+      const oldRecord = EmojiRecord(
+        name: 'a',
+        aliases: ['old'],
+        url: 'https://example.com/old.png',
+        localOnly: false,
+        isSensitive: false,
+        allowRoleIds: [],
+      );
+      const newRecord = EmojiRecord(
+        name: 'a',
+        aliases: [],
+        url: 'https://example.com/new.png',
+        localOnly: false,
+        isSensitive: false,
+        allowRoleIds: [],
+      );
+      final duplicateSource = FakeEmojiSource(records: [oldRecord, newRecord]);
+      final firstCatalog = PersistentEmojiCatalog(
+        source: duplicateSource,
+        store: store,
+      );
+
+      await firstCatalog.sync(force: true);
+
+      expect(store.savedRecords, equals([newRecord]));
+      expect(firstCatalog.get('a')?.url, equals(newRecord.url));
+      expect(firstCatalog.get('old'), isNull);
+
+      final restartedSource = FakeEmojiSource();
+      final restartedCatalog = PersistentEmojiCatalog(
+        source: restartedSource,
+        store: store,
+      );
+      await restartedCatalog.sync();
+
+      expect(restartedSource.callCount, isZero);
+      expect(restartedCatalog.get('a')?.url, equals(newRecord.url));
+      expect(restartedCatalog.get('old'), isNull);
+    });
+
     test('TTL内の再起動ではストアを復元して再取得しない', () async {
       final cachedStore = FakeEmojiStore(
         records: _records,

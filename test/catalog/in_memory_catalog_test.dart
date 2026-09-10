@@ -55,6 +55,33 @@ void main() {
       expect(catalog.get('alias2')!.name, equals('test_emoji'));
     });
 
+    test('name重複時も取得結果を重複除去しない', () async {
+      const oldRecord = EmojiRecord(
+        name: 'a',
+        aliases: ['old'],
+        url: 'https://example.com/old.png',
+        localOnly: false,
+        isSensitive: false,
+        allowRoleIds: [],
+      );
+      const newRecord = EmojiRecord(
+        name: 'a',
+        aliases: [],
+        url: 'https://example.com/new.png',
+        localOnly: false,
+        isSensitive: false,
+        allowRoleIds: [],
+      );
+      final duplicateCatalog = InMemoryEmojiCatalog(
+        source: FakeEmojiSource(records: [oldRecord, newRecord]),
+      );
+
+      await duplicateCatalog.sync(force: true);
+
+      expect(duplicateCatalog.get('a')?.url, equals(newRecord.url));
+      expect(duplicateCatalog.get('old')?.url, equals(oldRecord.url));
+    });
+
     test('snapshotは全キーを含む不変マップ', () async {
       await catalog.sync(force: true);
 
