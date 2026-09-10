@@ -1,0 +1,11 @@
+targets:
+  $default:
+    sources:
+      include:
+        - lib/**
+        - $package$
+    builders:
+      drift_dev:
+        options:
+          store_date_time_values_as_text: true
+          fatal_warnings: true
