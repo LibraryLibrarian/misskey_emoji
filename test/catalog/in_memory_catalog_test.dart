@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:misskey_emoji/src/catalog/in_memory_catalog.dart';
 import 'package:misskey_emoji/src/models/emoji_record.dart';
@@ -172,6 +174,34 @@ void main() {
 
       expect(capturedError.toString(), contains('Network error'));
       expect(capturedStackTrace, isNotNull);
+    });
+
+    test('並行disposeは同じFutureを共有して進行中の同期を待つ', () async {
+      final fetch = Completer<void>();
+      final testCatalog = InMemoryEmojiCatalog(
+        source: FakeEmojiSource(records: _records, waitFor: fetch.future),
+      );
+      final syncFuture = testCatalog.sync();
+      final first = testCatalog.dispose();
+      final second = testCatalog.dispose();
+      expect(second, same(first));
+      var completed = 0;
+      final results = [
+        first.then((_) => completed++),
+        second.then((_) => completed++),
+      ];
+
+      await Future<void>.delayed(Duration.zero);
+      expect(completed, isZero);
+      await expectLater(testCatalog.sync(), throwsA(isA<StateError>()));
+
+      fetch.complete();
+      await syncFuture;
+      await Future.wait(results);
+      expect(completed, equals(2));
+      expect(testCatalog.get('test_emoji'), isNotNull);
+      expect(testCatalog.dispose(), same(first));
+      await testCatalog.dispose();
     });
 
     test('dispose後のsyncはStateErrorを投げる', () async {
