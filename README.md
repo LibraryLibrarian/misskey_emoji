@@ -279,12 +279,12 @@ class EmojiCatalogNotifier extends _$EmojiCatalogNotifier {
 
 ## Persistent-store build configuration
 
-The native SQLite dependency is supplied by `sqlite3` 3.x build hooks. During a build, the hooks download prebuilt binaries from GitHub Releases and verify them with SHA-256. Build environments therefore need network access, unless the consuming application configures an alternative source.
+The native SQLite dependency is supplied by `sqlite3` 3.x build hooks. With a clean hook cache, the default source needs access to GitHub Releases to download prebuilt binaries, which are verified with SHA-256. Previously downloaded binaries are reused from the hook cache. An internal mirror still requires network access. For offline builds, consider `system`, `process`, `executable`, or a local source, with the required SQLite library already available.
 
-`hooks.user_defines` is controlled by the consuming application because it is the root package that owns the build configuration. For example, SQLCipher, the operating system's SQLite library, and an internal binary mirror must be configured in the application's own `pubspec.yaml`; this package cannot provide defaults for them.
+`hooks.user_defines` is controlled by the consuming application. Configure SQLCipher, the operating system's SQLite library, or an internal binary mirror in the application's `pubspec.yaml` normally, but in the **workspace root's `pubspec.yaml` when using a pub workspace**. Settings in an application member are ignored in a workspace. This package cannot provide defaults for them.
 
 ```yaml
-# The consuming application's pubspec.yaml
+# Application pubspec.yaml (workspace root pubspec.yaml in a pub workspace)
 hooks:
   user_defines:
     sqlite3:

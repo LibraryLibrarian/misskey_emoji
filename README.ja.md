@@ -279,12 +279,12 @@ class EmojiCatalogNotifier extends _$EmojiCatalogNotifier {
 
 ## 永続ストアのビルド設定
 
-ネイティブSQLite依存は`sqlite3` 3.xのbuild hooksにより提供されます。build hooksはビルド時にGitHub Releasesからprebuiltバイナリをダウンロードし、SHA-256で検証します。そのため、別の取得元を利用する設定がない限り、ビルド環境にはネットワークアクセスが必要です。
+ネイティブSQLite依存は`sqlite3` 3.xのbuild hooksにより提供されます。クリーンなhook cacheでdefault sourceを使う場合は、prebuiltバイナリの取得にGitHub Releasesへのアクセスが必要で、取得したバイナリはSHA-256で検証されます。取得済みバイナリはhook cacheから再利用されます。社内ミラーもネットワークアクセスが必要です。オフラインビルドでは、必要なSQLiteライブラリを用意したうえで`system`、`process`、`executable`、またはローカルsourceを検討してください。
 
-`hooks.user_defines`を設定するのは利用側アプリケーションです。利用側アプリケーションはbuild設定を所有するroot packageだからです。SQLCipher、OS同梱SQLite、社内ミラーからのバイナリ取得は、利用側アプリケーション自身の`pubspec.yaml`で設定してください。本パッケージから既定値を提供することはできません。
+`hooks.user_defines`を設定するのは利用側アプリケーションです。SQLCipher、OS同梱SQLite、社内ミラーからのバイナリ取得は、通常は利用側アプリの`pubspec.yaml`、**pub workspaceではworkspace rootの`pubspec.yaml`**で設定してください。workspace内のapplication memberに置いた設定は無視されます。本パッケージから既定値を提供することはできません。
 
 ```yaml
-# 利用側アプリケーションのpubspec.yaml
+# 利用側アプリのpubspec.yaml（pub workspaceではworkspace rootのpubspec.yaml）
 hooks:
   user_defines:
     sqlite3:
