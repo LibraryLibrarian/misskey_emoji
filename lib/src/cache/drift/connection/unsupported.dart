@@ -4,4 +4,6 @@ import '../../emoji_store.dart';
 Future<EmojiStore> openStore({
   required String directory,
   required String databaseName,
-}) => throw UnsupportedError('このプラットフォームの絵文字ストアは未対応です');
+}) async {
+  throw UnsupportedError('このプラットフォームの絵文字ストアは未対応です');
+}
