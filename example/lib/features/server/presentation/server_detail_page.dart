@@ -87,7 +87,9 @@ class _ServerDetailPageState extends State<ServerDetailPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('キャッシュクリア'),
-        content: Text('${widget.server.name} の絵文字キャッシュを削除しますか？'),
+        content: Text(
+          '${widget.server.name} の絵文字キャッシュを削除しますか？\n現在表示中の一覧は維持されます。',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
@@ -128,7 +130,7 @@ class _ServerDetailPageState extends State<ServerDetailPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('サーバーを削除'),
-        content: Text('${widget.server.name} を削除しますか？\n絵文字キャッシュも合わせて削除されます。'),
+        content: Text('${widget.server.name} を削除しますか？\n保存済みの絵文字キャッシュは端末に残ります。'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
@@ -273,7 +275,7 @@ class _ServerDetailPageState extends State<ServerDetailPage> {
               ),
               const SizedBox(width: 8),
               Text(
-                '絵文字数',
+                '保存済みキャッシュ件数',
                 style: textTheme.bodyMedium?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),
