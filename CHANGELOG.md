@@ -7,10 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### 変更
-
-- 絵文字キャッシュに列指向のDriftストアを追加。スキーマ変更時は必ず`schemaVersion`を増やす。バージョン差がある場合は`destructiveFallback`でキャッシュを破棄して再作成する（初回作成と同一バージョンでの破損復旧は対象外）。
-
 ## [2.0.0-beta.1] - 2026-08-14
 
 First pre-release of the 2.0.0 line. Contains the breaking changes listed below.
