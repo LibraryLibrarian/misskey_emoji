@@ -40,7 +40,7 @@ jobs:
         run: flutter pub get
 
       # SDK依存のhook.dillを復元しないため、sqlite3がダウンロードしたバイナリだけを再利用する
-      - name: ネイティブビルドフックのキャッシュ
+      - name: Cache native build hooks
         uses: actions/cache@v4
         with:
           path: .dart_tool/hooks_runner/shared/sqlite3/
