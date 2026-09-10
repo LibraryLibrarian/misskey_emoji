@@ -9,11 +9,20 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/server_context.dart';
 import '../models/server_entry.dart';
 
+typedef ServerContextFactory =
+    Future<ServerContext> Function(ServerEntry entry);
+
 class ServerManager extends ChangeNotifier {
+  ServerManager({ServerContextFactory? contextFactory})
+    : _contextFactory = contextFactory ?? _createDefaultContext;
+
   static const _serversKey = 'servers_v1';
   static const _lastServerKey = 'last_server_key_v1';
 
+  final ServerContextFactory _contextFactory;
   final Map<String, ServerContext> _contexts = {};
+  final Map<String, Future<void>> _contextInitializations = {};
+  final Map<String, Future<void>> _serverRemovals = {};
   final Map<String, int> _catalogVersions = {};
   List<ServerEntry> _servers = [];
   String? _selectedKey;
@@ -21,6 +30,7 @@ class ServerManager extends ChangeNotifier {
   DateTime? _lastSync;
   bool _isSyncing = false;
   bool _initialized = false;
+  Future<void>? _closing;
 
   List<ServerEntry> get servers => List.unmodifiable(_servers);
   String? get selectedKey => _selectedKey;
@@ -135,13 +145,34 @@ class ServerManager extends ChangeNotifier {
   }
 
   /// 指定キーのサーバーを削除する
-  Future<void> removeServer(String key) async {
-    final remain = _servers.where((e) => e.key != key).toList();
-    final ctx = _contexts.remove(key);
-    _catalogVersions.remove(key);
-    if (ctx != null) {
-      await ctx.close();
+  Future<void> removeServer(String key) {
+    final existingRemoval = _serverRemovals[key];
+    if (existingRemoval != null) return existingRemoval;
+
+    late final Future<void> removal;
+    removal = _removeServer(key).whenComplete(() {
+      if (identical(_serverRemovals[key], removal)) {
+        _serverRemovals.remove(key);
+      }
+    });
+    _serverRemovals[key] = removal;
+    return removal;
+  }
+
+  Future<void> _removeServer(String key) async {
+    final initialization = _contextInitializations[key];
+    if (initialization != null) await initialization;
+
+    final context = _contexts[key];
+    if (context != null) {
+      // closeに失敗した場合はコンテキストと設定を残し、次の削除操作で再試行できる。
+      await context.close();
+      if (identical(_contexts[key], context)) {
+        _contexts.remove(key);
+      }
     }
+    _catalogVersions.remove(key);
+    final remain = _servers.where((entry) => entry.key != key).toList();
     _servers = remain;
     if (_selectedKey == key) {
       _selectedKey = remain.isNotEmpty ? remain.first.key : null;
@@ -258,8 +289,46 @@ class ServerManager extends ChangeNotifier {
 
   Future<void> _ensureContextFor(ServerEntry entry) async {
     final key = entry.key;
+    final closing = _closing;
+    if (closing != null) {
+      await closing;
+      throw StateError('終了済みのサーバー管理は初期化できません');
+    }
+
+    final removal = _serverRemovals[key];
+    if (removal != null) {
+      await removal;
+      if (!_servers.any((server) => server.key == key)) {
+        throw StateError('削除済みのサーバーは初期化できません');
+      }
+    }
+
     if (_contexts.containsKey(key)) return;
+    final initialization = _contextInitializations[key];
+    if (initialization != null) return initialization;
+
+    late final Future<void> newInitialization;
+    newInitialization = _createContextFor(entry).whenComplete(() {
+      if (identical(_contextInitializations[key], newInitialization)) {
+        _contextInitializations.remove(key);
+      }
+    });
+    _contextInitializations[key] = newInitialization;
+    return newInitialization;
+  }
+
+  Future<void> _createContextFor(ServerEntry entry) async {
+    final context = await _contextFactory(entry);
+    final key = entry.key;
+    if (_closing != null) {
+      await context.close();
+      throw StateError('終了中のサーバー管理は初期化できません');
+    }
     _catalogVersions.putIfAbsent(key, () => 0);
+    _contexts[key] = context;
+  }
+
+  static Future<ServerContext> _createDefaultContext(ServerEntry entry) async {
     final dir = await getApplicationDocumentsDirectory();
     final baseUrl = Uri.parse(entry.url);
     final store = await openEmojiStoreForServer(baseUrl, directory: dir.path);
@@ -271,7 +340,7 @@ class ServerManager extends ChangeNotifier {
       ttl: const Duration(minutes: 30),
     );
     final resolver = MisskeyEmojiResolver(catalog);
-    _contexts[key] = ServerContext(
+    return ServerContext(
       client: client,
       source: source,
       store: store,
@@ -280,11 +349,39 @@ class ServerManager extends ChangeNotifier {
     );
   }
 
-  Future<void> close() async {
-    for (final c in _contexts.values) {
-      await c.close();
+  Future<void> close() {
+    final closing = _closing;
+    if (closing != null) return closing;
+
+    late final Future<void> newClosing;
+    newClosing = _closeAll().whenComplete(() {
+      // close後に再利用する設計ではないため、終了状態を保持する。
+    });
+    _closing = newClosing;
+    return newClosing;
+  }
+
+  Future<void> _closeAll() async {
+    await Future.wait([
+      ..._contextInitializations.values,
+      ..._serverRemovals.values,
+    ]);
+
+    Object? firstError;
+    StackTrace? firstStackTrace;
+    for (final entry in _contexts.entries.toList()) {
+      try {
+        await entry.value.close();
+        if (identical(_contexts[entry.key], entry.value)) {
+          _contexts.remove(entry.key);
+          _catalogVersions.remove(entry.key);
+        }
+      } catch (error, stackTrace) {
+        firstError ??= error;
+        firstStackTrace ??= stackTrace;
+      }
     }
-    _contexts.clear();
-    _catalogVersions.clear();
+    if (firstError != null)
+      Error.throwWithStackTrace(firstError, firstStackTrace!);
   }
 }
