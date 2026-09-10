@@ -13,10 +13,10 @@ dependencies:
   misskey_client: ^1.0.0-beta.6
   path: ^1.9.0
 dev_dependencies:
-  # 2.14以降の既定AOT起動はDart 3.10のbuild hooksと非互換。
-  # SDK下限の更新時に制約を再検討する。
-  build_runner: '>=2.10.0 <2.14.0'
-  drift_dev: '>=2.34.0 <2.35.0'
+  # sqlite3のbuild hooksとAOT起動が非互換なため、コード生成は--force-jitで実行する。
+  build_runner: ^2.15.1
+  # SDK間で生成物を一致させるため、rangeではなく厳密に固定する。
+  drift_dev: 2.34.0
   flutter_lints: ^5.0.0
   flutter_test:
     sdk: flutter

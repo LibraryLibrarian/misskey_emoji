@@ -39,10 +39,10 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: コード生成
-        run: dart run build_runner build
+      - name: Generate code
+        run: dart run build_runner build --force-jit
 
-      - name: 生成コードの差分確認
+      - name: Check generated code
         run: git diff --exit-code -- '*.g.dart'
 
       - name: Check formatting
