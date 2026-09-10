@@ -23,15 +23,15 @@ Future<EmojiStore> openEmojiStoreForServer(
 );
 
 String _originHash(Uri baseUrl) {
-  final origin = Uri(
-    scheme: baseUrl.scheme.toLowerCase(),
-    host: baseUrl.host.toLowerCase(),
-    port: baseUrl.hasPort ? baseUrl.port : null,
-  ).origin;
+  final hashInput = jsonEncode([
+    baseUrl.scheme.toLowerCase(),
+    baseUrl.host.toLowerCase(),
+    baseUrl.hasPort ? baseUrl.port : null,
+  ]);
   // FNV-1aの32ビット値を使用し、実行環境に依存するString.hashCodeは使わない。
   // 8桁の有限ハッシュなので衝突の数学的な排除はできない。
   var hash = 0x811c9dc5;
-  for (final byte in utf8.encode(origin)) {
+  for (final byte in utf8.encode(hashInput)) {
     hash = ((hash ^ byte) * 0x01000193) & 0xffffffff;
   }
   return hash.toRadixString(16).padLeft(8, '0');

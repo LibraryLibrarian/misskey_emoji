@@ -68,6 +68,48 @@ void main() {
     expect(snapshot.syncedAt, time);
   });
 
+  test('serverKeyFromBaseUrlが受け付けるURIでストアを開ける', () async {
+    final urls = [
+      Uri.parse('ftp://example.com'),
+      Uri.parse('wss://example.com'),
+      Uri.parse('mailto:user@example.com'),
+      Uri.parse('file:///tmp/server'),
+      Uri.parse('example.com/path'),
+      Uri.parse('https:/path-only'),
+    ];
+
+    for (final url in urls) {
+      final store = await open(url);
+      await store.dispose();
+      stores.remove(store);
+    }
+  });
+
+  test('schemeまたはportだけが異なるURIは別ファイルを使用する', () async {
+    final first = await open(Uri.parse('https://example.com'));
+    await first.save([], syncedAt: DateTime.utc(2026));
+    await first.dispose();
+    stores.remove(first);
+
+    final second = await open(Uri.parse('http://example.com'));
+    expect((await second.load()).syncedAt, isNull);
+    await second.dispose();
+    stores.remove(second);
+
+    final third = await open(Uri.parse('https://example.com:8443'));
+    expect((await third.load()).syncedAt, isNull);
+    await third.dispose();
+    stores.remove(third);
+
+    final files = await directory
+        .list()
+        .map((file) => p.basename(file.path))
+        .where((name) => name.endsWith('.sqlite'))
+        .toList();
+    expect(files, hasLength(3));
+    expect(files.toSet(), hasLength(3));
+  });
+
   test('旧キーが衝突するホストでも異なるファイルを使用する', () async {
     final firstUrl = Uri.parse('https://a-b.example');
     final secondUrl = Uri.parse('https://a_b.example');
