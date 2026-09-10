@@ -39,11 +39,11 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # sqlite3のビルドフックが取得するネイティブバイナリをSDKごとに再利用する
+      # SDK依存のhook.dillを復元しないため、sqlite3がダウンロードしたバイナリだけを再利用する
       - name: ネイティブビルドフックのキャッシュ
         uses: actions/cache@v4
         with:
-          path: .dart_tool/hooks_runner/
+          path: .dart_tool/hooks_runner/shared/sqlite3/
           key: hooks-${{ runner.os }}-${{ runner.arch }}-${{ matrix.name }}-${{ hashFiles('pubspec.lock') }}
 
       - name: Generate code
