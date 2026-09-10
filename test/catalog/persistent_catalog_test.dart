@@ -38,10 +38,13 @@ class FakeEmojiStore implements EmojiStore {
   int loadCallCount = 0;
   int saveCallCount = 0;
   int disposeCallCount = 0;
+  Future<EmojiSnapshot>? pendingLoad;
+  Object? disposeError;
 
   @override
   Future<EmojiSnapshot> load() async {
     loadCallCount++;
+    if (pendingLoad != null) return await pendingLoad!;
     return EmojiSnapshot(
       records: List<EmojiRecord>.from(records),
       syncedAt: syncedAt,
@@ -72,6 +75,7 @@ class FakeEmojiStore implements EmojiStore {
   @override
   Future<void> dispose() async {
     disposeCallCount++;
+    if (disposeError != null) throw disposeError!;
   }
 
   List<EmojiRecord> _deduplicate(List<EmojiRecord> all) {
@@ -404,6 +408,63 @@ void main() {
       await sharedCatalog.dispose();
 
       expect(store.disposeCallCount, isZero);
+    });
+
+    for (final ownsStore in [true, false]) {
+      test('同期失敗時も所有権に従ってストアを破棄する（ownsStore: $ownsStore）', () async {
+        final load = Completer<EmojiSnapshot>();
+        final syncError = Exception('ロード失敗');
+        store.pendingLoad = load.future;
+        final testCatalog = PersistentEmojiCatalog(
+          source: source,
+          store: store,
+          ownsStore: ownsStore,
+        );
+
+        final syncResult = expectLater(
+          testCatalog.sync(),
+          throwsA(same(syncError)),
+        );
+        final disposeResult = expectLater(
+          testCatalog.dispose(),
+          throwsA(same(syncError)),
+        );
+        expect(store.disposeCallCount, isZero);
+
+        load.completeError(syncError);
+        await syncResult;
+        await disposeResult;
+
+        expect(store.disposeCallCount, ownsStore ? 1 : 0);
+      });
+    }
+
+    test('同期とストア破棄の両方が失敗した場合は破棄エラーを優先する', () async {
+      final load = Completer<EmojiSnapshot>();
+      final syncError = Exception('ロード失敗');
+      final disposeError = StateError('ストア破棄失敗');
+      store.pendingLoad = load.future;
+      store.disposeError = disposeError;
+
+      final syncResult = expectLater(catalog.sync(), throwsA(same(syncError)));
+      final disposeResult = expectLater(
+        catalog.dispose(),
+        throwsA(same(disposeError)),
+      );
+      load.completeError(syncError);
+      await syncResult;
+      await disposeResult;
+
+      expect(store.disposeCallCount, equals(1));
+    });
+
+    test('ストア破棄だけが失敗した場合も破棄エラーを送出する', () async {
+      final disposeError = StateError('ストア破棄失敗');
+      store.disposeError = disposeError;
+
+      await expectLater(catalog.dispose(), throwsA(same(disposeError)));
+
+      expect(store.disposeCallCount, equals(1));
     });
 
     test('dispose後のsyncはStateErrorを投げる', () async {

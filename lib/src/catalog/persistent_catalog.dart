@@ -68,12 +68,21 @@ class PersistentEmojiCatalog extends EmojiCatalogBase {
     await store.save(records, syncedAt: syncedAt);
   }
 
+  /// 進行中の同期を待機し、同期が失敗した場合も所有ストアを破棄する
+  ///
+  /// 同期とストアの破棄が両方失敗した場合は、破棄エラーを優先して送出する。
+  /// リソース解放の失敗を呼び出し側に伝えるためであり、同期エラーは
+  /// dispose()からは送出しないが、元のsync()のFutureから確認できる。
+  /// ストアの破棄が成功した場合は、同期エラーをそのまま送出する。
   @override
   Future<void> dispose() async {
-    await super.dispose();
-    if (ownsStore && !_storeDisposed) {
-      _storeDisposed = true;
-      await store.dispose();
+    try {
+      await super.dispose();
+    } finally {
+      if (ownsStore && !_storeDisposed) {
+        _storeDisposed = true;
+        await store.dispose();
+      }
     }
   }
 }
