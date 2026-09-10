@@ -1,7 +1,26 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
-import 'package:misskey_emoji/src/util/server_db.dart';
+import 'package:misskey_emoji/misskey_emoji.dart';
 
 void main() {
+  test('ファクトリが指定ディレクトリの期待するパスにDBファイルを作成する', () async {
+    final directory = await Directory.systemTemp.createTemp('emoji_path_');
+    addTearDown(() => directory.delete(recursive: true));
+    final store = await openEmojiStoreForServer(
+      Uri.parse('https://misskey.io'),
+      directory: directory.path,
+    );
+    addTearDown(store.dispose);
+    // ハッシュの算出手順を写経せず、既知の入力に対するファイル名を固定する。
+    final expected = File(
+      '${directory.path}/misskey_emoji_https_misskey_io_e333a9d6.sqlite',
+    );
+    expect(await expected.exists(), isTrue);
+    expect(await expected.length(), greaterThan(0));
+    expect(await store.count(), isZero);
+  });
+
   group('serverKeyFromBaseUrl', () {
     test('基本的なHTTPS URLからキーを生成', () {
       final key = serverKeyFromBaseUrl(Uri.parse('https://misskey.io'));
