@@ -51,6 +51,7 @@ abstract class EmojiCatalogBase implements EmojiCatalog {
   DateTime _last = DateTime.fromMillisecondsSinceEpoch(0);
   DateTime? _lastError;
   Future<void>? _ongoing;
+  Future<void>? _disposing;
   bool _disposed = false;
 
   /// 正規化済みショートコードとレコードのインデックス
@@ -150,9 +151,13 @@ abstract class EmojiCatalogBase implements EmojiCatalog {
     required DateTime syncedAt,
   }) async {}
 
+  /// 新規同期を拒否し、進行中の同期の完了を待つ
+  ///
+  /// 複数回呼び出した場合は同じFutureを返し、同期の成功・失敗を共有する。
   @override
-  Future<void> dispose() async {
-    if (_disposed) return;
+  Future<void> dispose() => _disposing ??= _dispose();
+
+  Future<void> _dispose() async {
     _disposed = true;
     await _ongoing;
   }
