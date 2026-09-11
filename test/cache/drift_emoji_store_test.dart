@@ -1,11 +1,12 @@
 import 'dart:io';
 
+import 'package:drift/drift.dart' show DatabaseConnection;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:misskey_emoji/misskey_emoji.dart';
 import 'package:misskey_emoji/src/cache/drift/connection/native.dart';
 import 'package:misskey_emoji/src/cache/drift/drift_emoji_store.dart';
 import 'package:misskey_emoji/src/cache/drift/emoji_database.dart';
-import 'package:misskey_emoji/src/models/emoji_record.dart';
 
 const _first = EmojiRecord(
   name: 'z',
@@ -46,6 +47,16 @@ class _FailingCloseDatabase extends EmojiDatabase {
   }
 }
 
+List<Object?> _values(EmojiRecord record) => [
+  record.name,
+  record.aliases,
+  record.category,
+  record.url,
+  record.localOnly,
+  record.isSensitive,
+  record.allowRoleIds,
+];
+
 void main() {
   final syncedAt = DateTime.utc(2026, 9, 10, 12, 34, 56, 789, 123);
 
@@ -54,13 +65,20 @@ void main() {
     late DriftEmojiStore store;
 
     setUp(() {
-      database = EmojiDatabase(NativeDatabase.memory());
+      database = EmojiDatabase(
+        DatabaseConnection(
+          NativeDatabase.memory(),
+          closeStreamsSynchronously: true,
+        ),
+      );
       store = DriftEmojiStore(database);
     });
     tearDown(() => store.dispose());
 
     test('未保存と空の同期結果を区別しclearで時刻も削除する', () async {
-      expect((await store.load()).syncedAt, isNull);
+      final initial = await store.load();
+      expect(initial.records, isEmpty);
+      expect(initial.syncedAt, isNull);
       expect(await store.count(), isZero);
       await store.save([_first], syncedAt: syncedAt);
       await store.save([], syncedAt: syncedAt);
@@ -95,6 +113,58 @@ void main() {
       expect(second.allowRoleIds, isEmpty);
       expect(second.localOnly, isFalse);
       expect(second.isSensitive, isFalse);
+    });
+
+    test('単一レコードを保存し既存の一覧を全置換する', () async {
+      await store.save([_first, _second], syncedAt: syncedAt);
+      final next = syncedAt.add(const Duration(minutes: 1));
+      await store.save([_last], syncedAt: next);
+      final snapshot = await store.load();
+      expect(_values(snapshot.records.single), _values(_last));
+      expect(snapshot.syncedAt, next);
+      expect(await store.count(), 1);
+    });
+
+    test('名前と属性に含まれる特殊文字をそのまま保存して読み込める', () async {
+      const record = EmojiRecord(
+        name: '日本語_😀_"\\\n',
+        aliases: ['引用符"', '逆斜線\\', '改行\n', ''],
+        category: '分類\n"',
+        url: 'https://example.com/emoji.png?query=%22&value=1',
+        localOnly: true,
+        isSensitive: true,
+        allowRoleIds: ['役割"\\'],
+      );
+      await store.save([record], syncedAt: syncedAt);
+      expect(_values((await store.load()).records.single), _values(record));
+    });
+
+    test('大量のレコードを入力順のまま保存して読み込める', () async {
+      final records = List.generate(
+        15000,
+        (index) => EmojiRecord(
+          name: '絵文字_$index',
+          aliases: ['別名_$index'],
+          url: 'https://example.com/$index.png',
+          localOnly: false,
+          isSensitive: false,
+          allowRoleIds: [],
+        ),
+      );
+      await store.save(records, syncedAt: syncedAt);
+      final snapshot = await store.load();
+      expect(snapshot.records.map(_values), records.map(_values));
+      expect(await store.count(), records.length);
+      expect(snapshot.syncedAt, syncedAt);
+    });
+
+    test('空と非空の読み込み結果は長さを変更できない', () async {
+      final empty = (await store.load()).records;
+      expect(() => empty.add(_first), throwsUnsupportedError);
+      await store.save([_first], syncedAt: syncedAt);
+      final records = (await store.load()).records;
+      expect(() => records.add(_second), throwsUnsupportedError);
+      expect(records.removeLast, throwsUnsupportedError);
     });
 
     test('重複を後勝ちで除去し最後の出現位置へ移す', () async {

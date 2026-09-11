@@ -50,7 +50,7 @@ class DriftEmojiStore implements EmojiStore {
               allowRoleIds: (jsonDecode(row.allowRoleIds) as List<dynamic>)
                   .cast<String>(),
             ),
-        ],
+        ].toList(growable: false),
         syncedAt: metadata?.lastSyncedAt,
       );
     });
@@ -118,6 +118,11 @@ class DriftEmojiStore implements EmojiStore {
     return readSizeInBytes?.call();
   }
 
+  /// 新規操作を拒否し、所有する接続を閉じる。複数回の呼び出しは同じ結果を返す。
+  ///
+  /// 実行中の操作の完了は待たない。操作と破棄が競合した場合の挙動は未定義で、
+  /// 保存中のトランザクションが失敗する場合もある。呼び出し側はすべての操作の
+  /// 完了を待ってから破棄すること。
   @override
   Future<void> dispose() => _disposing ??= _dispose();
 

@@ -1,8 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:misskey_emoji/src/catalog/in_memory_catalog.dart';
-import 'package:misskey_emoji/src/models/emoji_record.dart';
+import 'package:misskey_emoji/misskey_emoji.dart';
 
 import '../helpers/fake_emoji_source.dart';
 

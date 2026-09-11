@@ -1,9 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:misskey_emoji/src/cache/emoji_store.dart';
-import 'package:misskey_emoji/src/catalog/persistent_catalog.dart';
-import 'package:misskey_emoji/src/models/emoji_record.dart';
+import 'package:misskey_emoji/misskey_emoji.dart';
 
 import '../helpers/fake_emoji_source.dart';
 
@@ -48,7 +46,7 @@ class FakeEmojiStore implements EmojiStore {
     loadCallCount++;
     if (pendingLoad != null) return pendingLoad!;
     return EmojiSnapshot(
-      records: List<EmojiRecord>.from(records),
+      records: List<EmojiRecord>.from(records, growable: false),
       syncedAt: syncedAt,
     );
   }
@@ -105,7 +103,7 @@ class FailingOnceEmojiStore extends FakeEmojiStore {
       throw Exception('一時的なロードエラー');
     }
     return EmojiSnapshot(
-      records: List<EmojiRecord>.from(records),
+      records: List<EmojiRecord>.from(records, growable: false),
       syncedAt: syncedAt,
     );
   }

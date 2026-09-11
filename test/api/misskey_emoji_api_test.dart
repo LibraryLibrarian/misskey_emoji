@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:misskey_client/misskey_client.dart';
-import 'package:misskey_emoji/src/source/emoji_source.dart';
+import 'package:misskey_emoji/misskey_emoji.dart';
 
 class _TestServer {
   _TestServer._(this.server, this.response);

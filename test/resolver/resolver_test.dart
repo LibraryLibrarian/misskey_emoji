@@ -1,7 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:misskey_emoji/src/catalog/catalog.dart';
-import 'package:misskey_emoji/src/models/emoji_record.dart';
-import 'package:misskey_emoji/src/resolver/resolver.dart';
+import 'package:misskey_emoji/misskey_emoji.dart';
 
 /// テスト用のモックカタログ
 class MockEmojiCatalog implements EmojiCatalog {
