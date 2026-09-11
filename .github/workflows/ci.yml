@@ -39,6 +39,12 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Generate code
+        run: dart run build_runner build --force-jit
+
+      - name: Check generated code
+        run: git diff --exit-code -- '*.g.dart'
+
       - name: Check formatting
         run: dart format --output=none --set-exit-if-changed .
 
