@@ -29,30 +29,89 @@ const _records = [
 ];
 
 class FakeEmojiStore implements EmojiStore {
-  FakeEmojiStore({this.records = const []});
+  FakeEmojiStore({this.records = const [], this.syncedAt});
 
   List<EmojiRecord> records;
+  DateTime? syncedAt;
   List<EmojiRecord> savedRecords = [];
+  DateTime? savedSyncedAt;
   int loadCallCount = 0;
   int saveCallCount = 0;
   int disposeCallCount = 0;
 
   @override
-  Future<List<EmojiRecord>> loadAll() async {
+  Future<EmojiSnapshot> load() async {
     loadCallCount++;
-    return List<EmojiRecord>.from(records);
+    return EmojiSnapshot(
+      records: List<EmojiRecord>.from(records),
+      syncedAt: syncedAt,
+    );
   }
 
   @override
-  Future<void> saveAll(List<EmojiRecord> all) async {
+  Future<void> save(List<EmojiRecord> all, {required DateTime syncedAt}) async {
     saveCallCount++;
-    savedRecords = List<EmojiRecord>.from(all);
-    records = savedRecords;
+    savedRecords = _deduplicate(all);
+    savedSyncedAt = syncedAt;
+    records = List<EmojiRecord>.from(savedRecords);
+    this.syncedAt = syncedAt;
   }
+
+  @override
+  Future<void> clear() async {
+    records = [];
+    syncedAt = null;
+  }
+
+  @override
+  Future<int> count() async => records.length;
+
+  @override
+  Future<int?> sizeInBytes() async => null;
 
   @override
   Future<void> dispose() async {
     disposeCallCount++;
+  }
+
+  List<EmojiRecord> _deduplicate(List<EmojiRecord> all) {
+    final recordsByName = <String, EmojiRecord>{};
+    for (final record in all) {
+      recordsByName.remove(record.name);
+      recordsByName[record.name] = record;
+    }
+    return recordsByName.values.toList(growable: false);
+  }
+}
+
+class FailingOnceEmojiStore extends FakeEmojiStore {
+  FailingOnceEmojiStore({super.records, super.syncedAt});
+
+  bool _shouldFail = true;
+
+  @override
+  Future<EmojiSnapshot> load() async {
+    loadCallCount++;
+    if (_shouldFail) {
+      _shouldFail = false;
+      throw Exception('一時的なロードエラー');
+    }
+    return EmojiSnapshot(
+      records: List<EmojiRecord>.from(records),
+      syncedAt: syncedAt,
+    );
+  }
+}
+
+class DelayedSaveEmojiStore extends FakeEmojiStore {
+  DelayedSaveEmojiStore(this.saveDelay);
+
+  final Duration saveDelay;
+
+  @override
+  Future<void> save(List<EmojiRecord> all, {required DateTime syncedAt}) async {
+    await Future<void>.delayed(saveDelay);
+    await super.save(all, syncedAt: syncedAt);
   }
 }
 
@@ -78,6 +137,7 @@ void main() {
       expect(store.loadCallCount, equals(1));
       expect(store.saveCallCount, equals(1));
       expect(store.savedRecords, equals(_records));
+      expect(store.savedSyncedAt, isNotNull);
       expect(catalog.get('alias1')!.name, equals('test_emoji'));
     });
 
@@ -102,6 +162,23 @@ void main() {
       expect(testCatalog.get('test_emoji'), isNotNull);
     });
 
+    test('保存待機より短いTTLでも保存した同期成功時刻をTTL判定に使う', () async {
+      const saveDelay = Duration(milliseconds: 100);
+      final delayedStore = DelayedSaveEmojiStore(saveDelay);
+      final testCatalog = PersistentEmojiCatalog(
+        source: source,
+        store: delayedStore,
+        ttl: const Duration(milliseconds: 25),
+      );
+
+      await testCatalog.sync();
+      expect(delayedStore.savedSyncedAt, isNotNull);
+
+      await testCatalog.sync();
+
+      expect(source.callCount, equals(2));
+    });
+
     test('取得エラー時はストアのキャッシュを保持して保存しない', () async {
       final errorSource = FakeEmojiSource(error: Exception('Network error'));
       final cachedStore = FakeEmojiStore(records: [_records.first]);
@@ -114,6 +191,133 @@ void main() {
 
       expect(testCatalog.get('test_emoji'), isNotNull);
       expect(cachedStore.saveCallCount, isZero);
+    });
+
+    test('name重複時も保存前後でショートコードの解決結果が一致する', () async {
+      const oldRecord = EmojiRecord(
+        name: 'a',
+        aliases: ['old'],
+        url: 'https://example.com/old.png',
+        localOnly: false,
+        isSensitive: false,
+        allowRoleIds: [],
+      );
+      const newRecord = EmojiRecord(
+        name: 'a',
+        aliases: [],
+        url: 'https://example.com/new.png',
+        localOnly: false,
+        isSensitive: false,
+        allowRoleIds: [],
+      );
+      final duplicateSource = FakeEmojiSource(records: [oldRecord, newRecord]);
+      final firstCatalog = PersistentEmojiCatalog(
+        source: duplicateSource,
+        store: store,
+      );
+
+      await firstCatalog.sync(force: true);
+
+      expect(store.savedRecords, equals([newRecord]));
+      expect(firstCatalog.get('a')?.url, equals(newRecord.url));
+      expect(firstCatalog.get('old'), isNull);
+
+      final restartedSource = FakeEmojiSource();
+      final restartedCatalog = PersistentEmojiCatalog(
+        source: restartedSource,
+        store: store,
+      );
+      await restartedCatalog.sync();
+
+      expect(restartedSource.callCount, isZero);
+      expect(restartedCatalog.get('a')?.url, equals(newRecord.url));
+      expect(restartedCatalog.get('old'), isNull);
+    });
+
+    test('TTL内の再起動ではストアを復元して再取得しない', () async {
+      final cachedStore = FakeEmojiStore(
+        records: _records,
+        syncedAt: DateTime.now(),
+      );
+      final testCatalog = PersistentEmojiCatalog(
+        source: source,
+        store: cachedStore,
+      );
+
+      await testCatalog.sync();
+
+      expect(cachedStore.loadCallCount, equals(1));
+      expect(source.callCount, isZero);
+      expect(testCatalog.get('test_emoji'), isNotNull);
+    });
+
+    test('ロード失敗後の同期ではストアから再度復元を試みる', () async {
+      final retryStore = FailingOnceEmojiStore(
+        records: _records,
+        syncedAt: DateTime.now(),
+      );
+      final testCatalog = PersistentEmojiCatalog(
+        source: source,
+        store: retryStore,
+      );
+
+      await expectLater(testCatalog.sync(), throwsA(isA<Exception>()));
+      await testCatalog.sync();
+
+      expect(retryStore.loadCallCount, equals(2));
+      expect(source.callCount, isZero);
+      expect(testCatalog.get('test_emoji'), isNotNull);
+    });
+
+    test('TTL超過後の再起動では再取得する', () async {
+      final cachedStore = FakeEmojiStore(
+        records: _records,
+        syncedAt: DateTime.now().subtract(const Duration(minutes: 31)),
+      );
+      final testCatalog = PersistentEmojiCatalog(
+        source: source,
+        store: cachedStore,
+      );
+
+      await testCatalog.sync();
+
+      expect(cachedStore.loadCallCount, equals(1));
+      expect(source.callCount, equals(1));
+    });
+
+    test('force指定時はTTL内でも再取得する', () async {
+      final cachedStore = FakeEmojiStore(
+        records: _records,
+        syncedAt: DateTime.now(),
+      );
+      final testCatalog = PersistentEmojiCatalog(
+        source: source,
+        store: cachedStore,
+      );
+
+      await testCatalog.sync(force: true);
+
+      expect(cachedStore.loadCallCount, equals(1));
+      expect(source.callCount, equals(1));
+    });
+
+    test('0件の同期結果もTTL内の再起動では再取得しない', () async {
+      final emptySource = FakeEmojiSource();
+      final firstCatalog = PersistentEmojiCatalog(
+        source: emptySource,
+        store: store,
+      );
+
+      await firstCatalog.sync(force: true);
+      final restartedCatalog = PersistentEmojiCatalog(
+        source: emptySource,
+        store: store,
+      );
+      await restartedCatalog.sync();
+
+      expect(store.records, isEmpty);
+      expect(store.syncedAt, isNotNull);
+      expect(emptySource.callCount, equals(1));
     });
 
     test('TTL内は再同期せずforceで再同期する', () async {
@@ -151,9 +355,10 @@ void main() {
       expect(store.saveCallCount, equals(1));
     });
 
-    test('ストアからのロードは初回のみ', () async {
+    test('同一プロセス内ではストアからのロードは初回のみ', () async {
       await catalog.sync();
       await catalog.sync(force: true);
+      await catalog.sync();
 
       expect(store.loadCallCount, equals(1));
     });
@@ -186,6 +391,19 @@ void main() {
       await catalog.dispose();
 
       expect(store.disposeCallCount, equals(1));
+    });
+
+    test('ownsStoreがfalseの場合はdisposeでストアを破棄しない', () async {
+      final sharedCatalog = PersistentEmojiCatalog(
+        source: source,
+        store: store,
+        ownsStore: false,
+      );
+
+      await sharedCatalog.dispose();
+      await sharedCatalog.dispose();
+
+      expect(store.disposeCallCount, isZero);
     });
 
     test('dispose後のsyncはStateErrorを投げる', () async {

@@ -134,37 +134,4 @@ void main() {
       expect(key1, equals(key2));
     });
   });
-
-  group('openEmojiIsarForServer', () {
-    test('生成されるDB名がサーバーキーを含む', () {
-      final baseUrl = Uri.parse('https://misskey.io');
-      final expectedKey = serverKeyFromBaseUrl(baseUrl);
-
-      // DB名の形式を確認
-      expect(
-        'misskey_emoji_$expectedKey',
-        matches(RegExp(r'^misskey_emoji_[a-z0-9_]+$')),
-      );
-    });
-
-    test('異なるサーバーには異なるDB名が生成される', () {
-      final key1 = serverKeyFromBaseUrl(Uri.parse('https://misskey.io'));
-      final key2 = serverKeyFromBaseUrl(Uri.parse('https://example.com'));
-
-      final dbName1 = 'misskey_emoji_$key1';
-      final dbName2 = 'misskey_emoji_$key2';
-
-      expect(dbName1, isNot(equals(dbName2)));
-    });
-
-    test('同じサーバーには同じDB名が生成される', () {
-      final key1 = serverKeyFromBaseUrl(Uri.parse('https://misskey.io'));
-      final key2 = serverKeyFromBaseUrl(Uri.parse('https://misskey.io'));
-
-      final dbName1 = 'misskey_emoji_$key1';
-      final dbName2 = 'misskey_emoji_$key2';
-
-      expect(dbName1, equals(dbName2));
-    });
-  });
 }
