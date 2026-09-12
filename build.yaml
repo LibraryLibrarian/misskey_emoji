@@ -3,9 +3,10 @@ targets:
     sources:
       include:
         - lib/**
+        - test/**
         - $package$
     builders:
-      isar_community_generator:isar_community_generator:
-        generate_for:
-          - lib/**
-
+      drift_dev:
+        options:
+          store_date_time_values_as_text: true
+          fatal_warnings: true

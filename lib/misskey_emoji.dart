@@ -1,5 +1,6 @@
+export 'src/cache/drift/drift_emoji_store.dart'
+    show suppressMultipleDatabaseWarning;
 export 'src/cache/emoji_store.dart';
-export 'src/cache/isar_emoji_store.dart';
 export 'src/catalog/catalog.dart';
 export 'src/catalog/in_memory_catalog.dart';
 export 'src/catalog/persistent_catalog.dart';

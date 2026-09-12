@@ -1,3 +1,5 @@
+import 'package:meta/meta.dart';
+
 import '../models/emoji_record.dart';
 import '../source/emoji_source.dart';
 import '../util/shortcode.dart';
@@ -49,6 +51,7 @@ abstract class EmojiCatalogBase implements EmojiCatalog {
   DateTime _last = DateTime.fromMillisecondsSinceEpoch(0);
   DateTime? _lastError;
   Future<void>? _ongoing;
+  Future<void>? _disposing;
   bool _disposed = false;
 
   /// 正規化済みショートコードとレコードのインデックス
@@ -97,10 +100,12 @@ abstract class EmojiCatalogBase implements EmojiCatalog {
 
   Future<void> _doSync() async {
     try {
-      final newest = await source.fetchAll();
-      byKey = indexRecords(newest);
-      await afterFetch(newest);
-      _last = DateTime.now();
+      final fetchedRecords = await source.fetchAll();
+      final records = normalizeFetchedRecords(fetchedRecords);
+      byKey = indexRecords(records);
+      final syncedAt = DateTime.now();
+      await afterFetch(records, syncedAt: syncedAt);
+      _last = syncedAt;
       _lastError = null;
     } on Exception catch (e, stackTrace) {
       // 既存のキャッシュを保持; エラー時間を記録してクールダウンを適用
@@ -109,6 +114,14 @@ abstract class EmojiCatalogBase implements EmojiCatalog {
       onSyncError?.call(e, stackTrace);
     }
   }
+
+  /// 取得したレコード一覧をカタログ用に正規化する
+  ///
+  /// 既定では取得順序を含めて入力をそのまま返す。永続カタログだけは、保存後の復元時も
+  /// 同じ解決結果にするため、ストアの保存契約に合わせてname重複を除去する。
+  @protected
+  List<EmojiRecord> normalizeFetchedRecords(List<EmojiRecord> records) =>
+      records;
 
   /// レコード一覧を正規化済みショートコードのマップに変換する
   Map<String, EmojiRecord> indexRecords(List<EmojiRecord> list) {
@@ -122,15 +135,31 @@ abstract class EmojiCatalogBase implements EmojiCatalog {
     return map;
   }
 
+  /// サブクラスが永続化された同期時刻を復元するために用いる
+  @protected
+  // ignore: use_setters_to_change_properties
+  void restoreLastSyncedAt(DateTime value) => _last = value;
+
   /// サブクラスで同期前の処理を実装（例：ストアからのロード）
+  @protected
   Future<void> beforeSync() async {}
 
   /// サブクラスでフェッチ後の処理を実装（例：ストアへの保存）
-  Future<void> afterFetch(List<EmojiRecord> records) async {}
+  ///
+  /// [syncedAt]は同期成功時刻である。
+  @protected
+  Future<void> afterFetch(
+    List<EmojiRecord> records, {
+    required DateTime syncedAt,
+  }) async {}
 
+  /// 新規同期を拒否し、進行中の同期の完了を待つ
+  ///
+  /// 複数回呼び出した場合は同じFutureを返し、同期の成功・失敗を共有する。
   @override
-  Future<void> dispose() async {
-    if (_disposed) return;
+  Future<void> dispose() => _disposing ??= _dispose();
+
+  Future<void> _dispose() async {
     _disposed = true;
     await _ongoing;
   }

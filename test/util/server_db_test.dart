@@ -1,7 +1,26 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
-import 'package:misskey_emoji/src/util/server_db.dart';
+import 'package:misskey_emoji/misskey_emoji.dart';
 
 void main() {
+  test('ファクトリが指定ディレクトリの期待するパスにDBファイルを作成する', () async {
+    final directory = await Directory.systemTemp.createTemp('emoji_path_');
+    addTearDown(() => directory.delete(recursive: true));
+    final store = await openEmojiStoreForServer(
+      Uri.parse('https://misskey.io'),
+      directory: directory.path,
+    );
+    addTearDown(store.dispose);
+    // ハッシュの算出手順を写経せず、既知の入力に対するファイル名を固定する。
+    final expected = File(
+      '${directory.path}/misskey_emoji_https_misskey_io_e333a9d6.sqlite',
+    );
+    expect(expected.existsSync(), isTrue);
+    expect(await expected.length(), greaterThan(0));
+    expect(await store.count(), isZero);
+  });
+
   group('serverKeyFromBaseUrl', () {
     test('基本的なHTTPS URLからキーを生成', () {
       final key = serverKeyFromBaseUrl(Uri.parse('https://misskey.io'));
@@ -132,39 +151,6 @@ void main() {
       final key2 = serverKeyFromBaseUrl(Uri.parse('https://misskey.io/'));
 
       expect(key1, equals(key2));
-    });
-  });
-
-  group('openEmojiIsarForServer', () {
-    test('生成されるDB名がサーバーキーを含む', () {
-      final baseUrl = Uri.parse('https://misskey.io');
-      final expectedKey = serverKeyFromBaseUrl(baseUrl);
-
-      // DB名の形式を確認
-      expect(
-        'misskey_emoji_$expectedKey',
-        matches(RegExp(r'^misskey_emoji_[a-z0-9_]+$')),
-      );
-    });
-
-    test('異なるサーバーには異なるDB名が生成される', () {
-      final key1 = serverKeyFromBaseUrl(Uri.parse('https://misskey.io'));
-      final key2 = serverKeyFromBaseUrl(Uri.parse('https://example.com'));
-
-      final dbName1 = 'misskey_emoji_$key1';
-      final dbName2 = 'misskey_emoji_$key2';
-
-      expect(dbName1, isNot(equals(dbName2)));
-    });
-
-    test('同じサーバーには同じDB名が生成される', () {
-      final key1 = serverKeyFromBaseUrl(Uri.parse('https://misskey.io'));
-      final key2 = serverKeyFromBaseUrl(Uri.parse('https://misskey.io'));
-
-      final dbName1 = 'misskey_emoji_$key1';
-      final dbName2 = 'misskey_emoji_$key2';
-
-      expect(dbName1, equals(dbName2));
     });
   });
 }
