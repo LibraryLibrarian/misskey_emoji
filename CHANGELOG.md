@@ -20,7 +20,7 @@ The upcoming release migrates persistence from Isar to Drift (SQLite).
 - **Breaking:** Changed the `EmojiCatalogBase.afterFetch` hook from `afterFetch(List<EmojiRecord>)` to `afterFetch(List<EmojiRecord>, {required DateTime syncedAt})`.
 - Marked the `EmojiCatalogBase.beforeSync` and `afterFetch` hooks `@protected`, matching `normalizeFetchedRecords` and `restoreLastSyncedAt`. Subclasses may still override them and call inherited members on `this`; calling them through an instance from outside now reports an analyzer diagnostic. `indexRecords` remains public.
 - **Breaking:** Moved store ownership from `IsarEmojiStore.ownsIsar` to `PersistentEmojiCatalog.ownsStore`.
-- **Breaking:** Raised the minimum SDK versions to Dart `>=3.10.0 <4.0.0` and Flutter `>=3.38.0`.
+- **Breaking:** Raised the minimum SDK versions to Dart `>=3.10.0 <4.0.0` and Flutter `>=3.38.1`. Flutter 3.38.0 bundles Dart 3.10.0-290.4.beta, and a pre-release does not satisfy `>=3.10.0`; Flutter 3.38.1 is the first release bundling the stable Dart 3.10.0.
 - Changed the persistence layer to Drift (SQLite).
 - **Behavior change:** `PersistentEmojiCatalog` now deduplicates fetched records by `name` before indexing, using the last value and last occurrence position. If a custom source returns duplicate names, aliases found only on overwritten records no longer resolve immediately after synchronization, matching restored-cache behavior. `InMemoryEmojiCatalog` behavior is unchanged.
 - `PersistentEmojiCatalog` now persists the synchronization timestamp, so restarting within the TTL no longer refetches emoji metadata over the network.

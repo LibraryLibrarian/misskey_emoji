@@ -40,7 +40,7 @@ dependencies:
 
 `misskey_client` is directly imported by the Misskey Quick Start below. It is not needed when you supply a custom `EmojiSource`.
 
-This development version requires Dart `>=3.10.0 <4.0.0` and Flutter `>=3.38.0`.
+This development version requires Dart `>=3.10.0 <4.0.0` and Flutter `>=3.38.1`. Flutter 3.38.0 bundles Dart 3.10.0-290.4.beta, and a pre-release does not satisfy `>=3.10.0`. Flutter 3.38.1 is the first release bundling the stable Dart 3.10.0.
 
 ## Quick Start
 
