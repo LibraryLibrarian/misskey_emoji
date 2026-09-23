@@ -1,7 +1,6 @@
 import 'dart:async';
 
-import 'package:misskey_emoji/src/models/emoji_record.dart';
-import 'package:misskey_emoji/src/source/emoji_source.dart';
+import 'package:misskey_emoji/misskey_emoji.dart';
 
 class FakeEmojiSource implements EmojiSource {
   FakeEmojiSource({

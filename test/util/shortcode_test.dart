@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:misskey_emoji/src/util/shortcode.dart';
+import 'package:misskey_emoji/misskey_emoji.dart';
 
 void main() {
   group('normalizeShortcode', () {

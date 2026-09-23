@@ -10,7 +10,10 @@ import 'widgets/emoji_grid.dart';
 import 'widgets/emoji_search_bar.dart';
 
 class EmojiBrowserPage extends StatefulWidget {
-  const EmojiBrowserPage({super.key});
+  const EmojiBrowserPage({super.key, this.manager});
+
+  /// テスト時は絵文字の取得元を差し替えた管理オブジェクトを渡せる。
+  final ServerManager? manager;
 
   @override
   State<EmojiBrowserPage> createState() => _EmojiBrowserPageState();
@@ -22,7 +25,7 @@ class _EmojiBrowserPageState extends State<EmojiBrowserPage>
   late final ScrollController _scrollController;
   late final AnimationController _appBarAnimationController;
   late final Animation<double> _appBarAnimation;
-  final ServerManager _manager = ServerManager();
+  late final ServerManager _manager;
   String _searchText = '';
   String? _selectedCategory;
   double _lastScrollOffset = 0.0;
@@ -30,6 +33,7 @@ class _EmojiBrowserPageState extends State<EmojiBrowserPage>
   @override
   void initState() {
     super.initState();
+    _manager = widget.manager ?? ServerManager();
     _searchController = TextEditingController();
     _scrollController = ScrollController();
     _appBarAnimationController = AnimationController(
@@ -144,7 +148,7 @@ class _EmojiBrowserPageState extends State<EmojiBrowserPage>
                       child: EmojiGrid(
                         catalog: _manager.currentContext?.catalog,
                         resolver: _manager.currentContext?.resolver,
-                        onSync: _manager.sync,
+                        onSync: () => _manager.sync(force: true),
                         searchText: _searchText,
                         selectedCategory: _selectedCategory,
                         catalogVersion: _manager.catalogVersionFor(
@@ -221,7 +225,7 @@ class _EmojiBrowserPageState extends State<EmojiBrowserPage>
                                     _manager.isSyncing ||
                                         _manager.currentContext?.catalog == null
                                     ? null
-                                    : _manager.sync,
+                                    : () => _manager.sync(force: true),
                                 tooltip: '同期',
                               ),
                               const SizedBox(width: 8),
@@ -334,18 +338,18 @@ class _EmojiBrowserPageState extends State<EmojiBrowserPage>
     if (!hasServerNow || catalog == null) return;
 
     if (!hadServer) {
-      // サーバーが新規に追加された場合
+      // サーバーを追加した直後も保存済みのTTLを尊重する。
       unawaited(_manager.sync());
       return;
     }
 
     if (serverChanged) {
-      // アクティブサーバーが変更された場合は必ず同期
+      // サーバー切替時は保存済みのTTLを尊重してキャッシュを優先する。
       unawaited(_manager.sync());
       return;
     }
 
-    // 同じサーバーでもカタログが空なら同期
+    // 空の一覧から戻った場合も保存済みのTTLを尊重する。
     final snapshot = catalog.snapshot();
     if (snapshot.isEmpty) {
       unawaited(_manager.sync());

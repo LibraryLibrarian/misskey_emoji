@@ -1,6 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
-import 'package:misskey_emoji/src/catalog/in_memory_catalog.dart';
-import 'package:misskey_emoji/src/models/emoji_record.dart';
+import 'package:misskey_emoji/misskey_emoji.dart';
 
 import '../helpers/fake_emoji_source.dart';
 
@@ -53,6 +54,33 @@ void main() {
 
       expect(catalog.get('alias1')!.name, equals('test_emoji'));
       expect(catalog.get('alias2')!.name, equals('test_emoji'));
+    });
+
+    test('name重複時も取得結果を重複除去しない', () async {
+      const oldRecord = EmojiRecord(
+        name: 'a',
+        aliases: ['old'],
+        url: 'https://example.com/old.png',
+        localOnly: false,
+        isSensitive: false,
+        allowRoleIds: [],
+      );
+      const newRecord = EmojiRecord(
+        name: 'a',
+        aliases: [],
+        url: 'https://example.com/new.png',
+        localOnly: false,
+        isSensitive: false,
+        allowRoleIds: [],
+      );
+      final duplicateCatalog = InMemoryEmojiCatalog(
+        source: FakeEmojiSource(records: [oldRecord, newRecord]),
+      );
+
+      await duplicateCatalog.sync(force: true);
+
+      expect(duplicateCatalog.get('a')?.url, equals(newRecord.url));
+      expect(duplicateCatalog.get('old')?.url, equals(oldRecord.url));
     });
 
     test('snapshotは全キーを含む不変マップ', () async {
@@ -145,6 +173,34 @@ void main() {
 
       expect(capturedError.toString(), contains('Network error'));
       expect(capturedStackTrace, isNotNull);
+    });
+
+    test('並行disposeは同じFutureを共有して進行中の同期を待つ', () async {
+      final fetch = Completer<void>();
+      final testCatalog = InMemoryEmojiCatalog(
+        source: FakeEmojiSource(records: _records, waitFor: fetch.future),
+      );
+      final syncFuture = testCatalog.sync();
+      final first = testCatalog.dispose();
+      final second = testCatalog.dispose();
+      expect(second, same(first));
+      var completed = 0;
+      final results = [
+        first.then((_) => completed++),
+        second.then((_) => completed++),
+      ];
+
+      await Future<void>.delayed(Duration.zero);
+      expect(completed, isZero);
+      await expectLater(testCatalog.sync(), throwsA(isA<StateError>()));
+
+      fetch.complete();
+      await syncFuture;
+      await Future.wait(results);
+      expect(completed, equals(2));
+      expect(testCatalog.get('test_emoji'), isNotNull);
+      expect(testCatalog.dispose(), same(first));
+      await testCatalog.dispose();
     });
 
     test('dispose後のsyncはStateErrorを投げる', () async {
