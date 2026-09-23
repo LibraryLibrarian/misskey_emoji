@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.0.0-beta.2] - 2026-09-23
 
-The upcoming release migrates persistence from Isar to Drift (SQLite).
+This pre-release migrates persistence from Isar to Drift (SQLite).
 
 ### Added
 
