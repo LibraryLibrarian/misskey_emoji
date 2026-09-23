@@ -34,7 +34,7 @@ Misskey MFM（Markup For Misskey）絵文字のメタデータをキャッシュ
 
 ```yaml
 dependencies:
-  misskey_emoji: ^2.0.0-beta.1
+  misskey_emoji: ^2.0.0-beta.2
   misskey_client: ^1.0.0-beta.6
 ```
 

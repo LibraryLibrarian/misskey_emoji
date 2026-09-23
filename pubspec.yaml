@@ -1,5 +1,5 @@
 name: misskey_emoji
-version: 2.0.0-beta.1
+version: 2.0.0-beta.2
 homepage: https://librarylibrarian.com
 environment:
   sdk: ">=3.10.0 <4.0.0"

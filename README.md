@@ -34,7 +34,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  misskey_emoji: ^2.0.0-beta.1
+  misskey_emoji: ^2.0.0-beta.2
   misskey_client: ^1.0.0-beta.6
 ```
 
